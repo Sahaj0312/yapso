@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct yapsoApp: App {
@@ -13,5 +14,7 @@ struct yapsoApp: App {
         WindowGroup {
             ContentView()
         }
+        // Syncs via CloudKit automatically once the iCloud capability is enabled; local-only until then.
+        .modelContainer(for: [Attempt.self, CoachProfile.self])
     }
 }
