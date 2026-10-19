@@ -21,7 +21,7 @@ Yapso trains two things at once: **articulating clearly under time pressure**, a
 
 ### Rules
 - One counted ("daily") attempt per local calendar day. Day resets at **local midnight**; an attempt revealed before midnight counts for the day it was revealed.
-- If a revealed daily attempt never reaches the speaking phase and its day has passed, it is forfeited (no streak credit).
+- If a revealed daily attempt never reaches the speaking phase, it is forfeited (no streak credit) once the calendar day its research window ended in has passed. (A 23:55 reveal can still be spoken just after midnight.)
 - Mic + speech permission are requested **before** the topic can be revealed, so nobody burns a day on a permission prompt.
 
 ## 2. Topics
