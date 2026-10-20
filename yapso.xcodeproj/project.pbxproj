@@ -52,20 +52,20 @@
 			);
 			sourceTree = "<group>";
 		};
-		9EE2BFA13086F000008C27DA /* Config */ = {
-			isa = PBXGroup;
-			children = (
-				9EE2BFA03086F000008C27DA /* Base.xcconfig */,
-			);
-			path = Config;
-			sourceTree = "<group>";
-		};
 		9EE2BF6D3086D5A4008C27DA /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				9EE2BF6C3086D5A4008C27DA /* yapso.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		9EE2BFA13086F000008C27DA /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				9EE2BFA03086F000008C27DA /* Base.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

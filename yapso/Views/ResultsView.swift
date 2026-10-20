@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A finished attempt: delivery metrics first (instant, on-device), then the transcript.
+/// A finished attempt: delivery metrics first, then the transcript, then the coach's feedback.
 struct ResultsView: View {
     let attempt: Attempt
     /// All attempts, for 7-day baselines.
@@ -14,6 +14,7 @@ struct ResultsView: View {
     }
 
     @State private var error: Error?
+    @State private var feedbackError: Error?
     private var connectivity = Connectivity.shared
 
     var body: some View {
@@ -37,10 +38,10 @@ struct ResultsView: View {
             .padding(24)
         }
         .scrollIndicators(.hidden)
-        .task(id: attempt.id) { await transcribe() }
+        .task(id: attempt.id) { await process() }
         // An offline talk is saved on the phone; analyze it the moment the connection comes back.
         .onChange(of: connectivity.isOnline) { _, online in
-            if online, error != nil { Task { await transcribe() } }
+            if online, error != nil || feedbackError != nil { Task { await process() } }
         }
     }
 
@@ -53,15 +54,16 @@ struct ResultsView: View {
                 }
                 MetricGrid(attempt: attempt, history: history)
                 TranscriptSection(timeline: timeline)
+                FeedbackSection(attempt: attempt, error: feedbackError) { Task { await process() } }
             } else {
                 EmptyTalkCard()
             }
-        } else if let error, TranscriptionError.isOffline(error) {
+        } else if let error, APIError.isOffline(error) {
             OfflineCard()
         } else if let error {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Couldn't transcribe this talk. \(error.localizedDescription)").foregroundStyle(.secondary)
-                Button("Try again") { Task { await transcribe() } }
+                Button("Try again") { Task { await process() } }
                     .buttonStyle(SecondaryButtonStyle())
             }
         } else if !hasLocalAudio {
@@ -81,19 +83,27 @@ struct ResultsView: View {
         return FileManager.default.fileExists(atPath: Recordings.url(for: name).path)
     }
 
-    private func transcribe() async {
-        withAnimation { error = nil }
+    private func process() async {
+        withAnimation { error = nil; feedbackError = nil }
         do {
             try await AttemptProcessor.transcribeIfNeeded(attempt)
         } catch {
             withAnimation { self.error = error }
+            return
+        }
+        do {
+            try await AttemptProcessor.requestFeedbackIfNeeded(attempt, history: history)
+        } catch {
+            withAnimation { feedbackError = error }
         }
     }
 
     /// Replaces an offline-model transcript with a cloud one now that there's a connection.
     private func retranscribeOnline() async {
         attempt.isTranscribed = false
-        await transcribe()
+        // The feedback was on the offline transcript, so it's redone too.
+        attempt.feedbackStatus = .notRequested
+        await process()
     }
 }
 
@@ -121,11 +131,7 @@ private struct MetricGrid: View {
     }
 
     private func baseline(_ value: (Attempt) -> Double) -> Double? {
-        guard let day = attempt.day else { return nil }
-        let samples = history
-            .filter { $0.kind == .daily && $0.isTranscribed && $0.wordCount > 0 && $0.id != attempt.id }
-            .compactMap { a in a.day.map { (day: $0, value: value(a)) } }
-        return DeliveryAnalyzer.baseline(samples, before: day)
+        attempt.baseline(in: history, value)
     }
 
     private func baseline(_ keyPath: KeyPath<Attempt, Double>) -> Double? {

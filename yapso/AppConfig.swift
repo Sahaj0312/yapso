@@ -37,19 +37,39 @@ nonisolated enum AppConfig {
         #endif
     }
 
-    /// The Worker that proxies Deepgram and OpenAI. Unset until it's deployed (build step 4).
-    static let apiBaseURL: URL? = nil
+    /// The Worker that proxies Deepgram and OpenAI (source in `worker/`).
+    static let apiBaseURL = URL(string: "https://yapso-api.sahaj0091.workers.dev")!
 
-    /// Debug builds call Deepgram directly with `DEEPGRAM_DEV_KEY` from the gitignored `Config/Secrets.xcconfig`,
-    /// or `-yapsoDeepgramKey <key>` at launch. Release builds have neither and go through the Worker.
-    static var deepgramKey: String? {
+    /// Launch with `-yapsoDirectDeepgram` (Debug only) to skip the Worker and call Deepgram directly with
+    /// `DEEPGRAM_DEV_KEY` from the gitignored `Config/Secrets.xcconfig`. Release builds never contain the key.
+    static var directDeepgramKey: String? {
         #if DEBUG
-        let key = UserDefaults.standard.string(forKey: "yapsoDeepgramKey")
-            ?? Bundle.main.object(forInfoDictionaryKey: "YapsoDeepgramDevKey") as? String
-        return key.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0.trimmingCharacters(in: .whitespaces) }
+        guard ProcessInfo.processInfo.arguments.contains("-yapsoDirectDeepgram"),
+              let key = (Bundle.main.object(forInfoDictionaryKey: "YapsoDeepgramDevKey") as? String)?
+                .trimmingCharacters(in: .whitespaces), !key.isEmpty else { return nil }
+        return key
         #else
         return nil
         #endif
+    }
+
+    /// Whether the user has Pro. Everyone does until RevenueCat is in (build step 8); launch with
+    /// `-yapsoFree` (Debug only) to see the free tier's one-feedback limit.
+    static var hasPro: Bool {
+        #if DEBUG
+        return !ProcessInfo.processInfo.arguments.contains("-yapsoFree")
+        #else
+        return true
+        #endif
+    }
+
+    /// Identifies this install to the Worker's rate limits. Not tied to the user or iCloud.
+    static var deviceID: String {
+        let key = "yapsoDeviceID"
+        if let id = UserDefaults.standard.string(forKey: key) { return id }
+        let id = UUID().uuidString
+        UserDefaults.standard.set(id, forKey: key)
+        return id
     }
 
     static let spinDuration: TimeInterval = 3.2

@@ -81,3 +81,14 @@ final class Attempt {
                         researchDuration: AppConfig.researchDuration)
     }
 }
+
+extension Attempt {
+    /// This attempt's metric averaged over the 7 days before it, from other daily talks that said something.
+    func baseline(in history: [Attempt], _ value: (Attempt) -> Double) -> Double? {
+        guard let day else { return nil }
+        let samples = history
+            .filter { $0.kind == .daily && $0.isTranscribed && $0.wordCount > 0 && $0.id != id }
+            .compactMap { attempt in attempt.day.map { (day: $0, value: value(attempt)) } }
+        return DeliveryAnalyzer.baseline(samples, before: day)
+    }
+}

@@ -4,10 +4,11 @@ import SwiftData
 /// Turns a finished recording into a transcript and delivery metrics. Idempotent and safe to call again after
 /// a crash or a failed upload; attempts whose audio lives on another device are left alone.
 ///
-/// Daily talks are transcribed by Deepgram only, so they fail with `TranscriptionError.offline` until there's a
-/// connection. Practice talks fall back to the on-device model.
+/// Daily talks are transcribed by Deepgram only, so they fail with `APIError.offline` until there's a
+/// connection. Practice talks fall back to the on-device model. Then the coach's feedback is requested.
 enum AttemptProcessor {
     private static var inFlight: Set<UUID> = []
+    private static var feedbackInFlight: Set<UUID> = []
 
     static func transcribeIfNeeded(_ attempt: Attempt) async throws {
         guard !attempt.isTranscribed, attempt.endedAt != nil, !inFlight.contains(attempt.id),
@@ -47,6 +48,75 @@ enum AttemptProcessor {
             guard kind == .practice else { throw error }
             let (text, words) = try await withTimeout(seconds: 60) { try await OnDeviceTranscriber.transcribe(fileURL: url) }
             return (text, words, .onDevice)
+        }
+    }
+
+    /// Requests the coach's content feedback once a talk with words is transcribed. Daily talks also replace the
+    /// coach's memory. Free users get one real feedback; later ones are marked locked.
+    static func requestFeedbackIfNeeded(_ attempt: Attempt, history: [Attempt]) async throws {
+        let requestable: Set<FeedbackStatus> = AppConfig.hasPro ? [.notRequested, .pending, .failed, .locked] : [.notRequested, .pending, .failed]
+        guard attempt.isTranscribed, requestable.contains(attempt.feedbackStatus), !feedbackInFlight.contains(attempt.id),
+              let timeline = attempt.transcriptTimeline, !timeline.words.isEmpty,
+              let context = attempt.modelContext else { return }
+
+        if !AppConfig.hasPro && history.contains(where: { $0.id != attempt.id && $0.feedbackStatus == .complete }) {
+            attempt.feedbackStatus = .locked
+            try? context.save()
+            return
+        }
+
+        feedbackInFlight.insert(attempt.id)
+        defer { feedbackInFlight.remove(attempt.id) }
+        attempt.feedbackStatus = .pending
+        try? context.save()
+
+        let profile = CoachProfile.latest(in: context)
+        let averages: FeedbackClient.Request.Averages? = attempt.baseline(in: history, \.wordsPerMinute).map { wpm in
+            FeedbackClient.Request.Averages(
+                wordsPerMinute: wpm,
+                fillerCount: attempt.baseline(in: history) { Double($0.fillerCount) } ?? 0,
+                longestPause: attempt.baseline(in: history, \.longestPauseSeconds) ?? 0,
+                secondsUsed: attempt.baseline(in: history, \.secondsUsed) ?? 0
+            )
+        }
+        let previous = attempt.redoOfAttemptID
+            .flatMap { id in history.first { $0.id == id } }
+            .map { earlier in
+                FeedbackClient.Request.Previous(
+                    transcript: earlier.transcript,
+                    ratings: Dictionary(uniqueKeysWithValues: (earlier.contentFeedback?.ratings ?? []).map { ($0.criterion.rawValue, $0.score) })
+                )
+            }
+        let request = FeedbackClient.Request(
+            kind: attempt.kind,
+            topic: .init(title: attempt.topicTitle, domain: attempt.topicDomain),
+            transcript: timeline.text,
+            metrics: .init(wordCount: attempt.wordCount, wordsPerMinute: attempt.wordsPerMinute, fillerCount: attempt.fillerCount,
+                           longestPause: attempt.longestPauseSeconds, secondsUsed: attempt.secondsUsed),
+            averages: averages,
+            memory: profile?.memory ?? CoachMemory(),
+            previous: previous
+        )
+
+        do {
+            let (feedback, memory) = try await FeedbackClient.request(request)
+            attempt.contentFeedback = feedback
+            attempt.feedbackStatus = .complete
+            // Only daily talks shape what the coach remembers; practice reads it but never writes.
+            if attempt.kind == .daily, var memory {
+                memory.onboarding = profile?.memory.onboarding
+                if let profile {
+                    profile.memory = memory
+                    profile.updatedAt = .now
+                } else {
+                    context.insert(CoachProfile(memory: memory))
+                }
+            }
+            try? context.save()
+        } catch {
+            attempt.feedbackStatus = .failed
+            try? context.save()
+            throw error
         }
     }
 
