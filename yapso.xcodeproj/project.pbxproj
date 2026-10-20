@@ -10,9 +10,22 @@
 		9EE2BF6C3086D5A4008C27DA /* yapso.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = yapso.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		9EE2BF953086E700008C27DA /* Exceptions for "yapso" folder in "yapso" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 9EE2BF6B3086D5A4008C27DA /* yapso */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9EE2BF6E3086D5A4008C27DA /* yapso */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9EE2BF953086E700008C27DA /* Exceptions for "yapso" folder in "yapso" target */,
+			);
 			path = yapso;
 			sourceTree = "<group>";
 		};
@@ -251,11 +264,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = yapso/yapso.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 3XKQA9H5TX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = yapso/Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Yapso records your 90-second talk so it can transcribe it and give you feedback. Audio stays on your phone.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Yapso transcribes your talk on your device to measure pace, filler words and pauses.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -284,11 +299,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = yapso/yapso.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 3XKQA9H5TX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = yapso/Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Yapso records your 90-second talk so it can transcribe it and give you feedback. Audio stays on your phone.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Yapso transcribes your talk on your device to measure pace, filler words and pauses.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
