@@ -28,6 +28,7 @@ export default {
     } catch (error) {
       if (error instanceof LimitError) return json({ error: "rate_limited" }, 429);
       if (error instanceof HTTPError) return json({ error: error.code }, error.status);
+      if (error instanceof DOMException && error.name === "TimeoutError") return json({ error: "upstream_timeout" }, 504);
       console.error(route, error);
       return json({ error: "internal" }, 500);
     }

@@ -17,7 +17,9 @@ export async function feedback(request: Request, env: Env): Promise<Response> {
   const body = await parse(request);
   const isDaily = body.kind === "daily";
 
+  // Under the app's 60s timeout, so a stalled model call fails cleanly and the app offers "Try again".
   const upstream = await fetch("https://api.openai.com/v1/responses", {
+    signal: AbortSignal.timeout(45_000),
     method: "POST",
     headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -35,6 +37,7 @@ export async function feedback(request: Request, env: Env): Promise<Response> {
   }
 
   const result: any = await upstream.json();
+  console.log("usage", JSON.stringify({ model: env.OPENAI_MODEL, effort: env.OPENAI_REASONING, ...result.usage }));
   const message = result.output?.find((item: any) => item.type === "message");
   const content = message?.content?.find((part: any) => part.type === "output_text" || part.type === "refusal");
   if (content?.type !== "output_text") {
