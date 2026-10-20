@@ -30,7 +30,7 @@ Yapso trains two things at once: **articulating clearly under time pressure**, a
 - Sweet spot: researchable in 10 minutes, explainable in 90 seconds. Not too broad ("Physics"), not unresearchably obscure.
 - Each topic: `id`, `title`, `domain` (Science, Technology, History, Economics, Psychology, Nature, Culture, …). Title only — no hint/subtitle.
 - **Per-user random**, never repeating for that user (a topic used for practice is also consumed). If the pool is exhausted, repeats are allowed.
-- Pool: ~500 topics, AI-generated in bulk, reviewed by hand, bundled as JSON, updatable from the Worker later.
+- Pool: 514 topics across 17 domains (Science, Space, Technology, Engineering, History, Economics, Business, Psychology, Body, Nature, Geography, Culture, Language, Food, Math, Design, Law), AI-generated in bulk, still to be reviewed by hand, bundled as JSON, updatable from the Worker later.
 - Rerolling via reinstall is accepted for v1.
 
 ## 3. Feedback
