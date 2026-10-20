@@ -114,7 +114,7 @@ No speaking during onboarding. No account. Notification permission is requested 
 - SwiftUI, iOS 26+, iPhone only.
 - **SwiftData + CloudKit** sync from day one. Model rules: every property optional or defaulted, no unique constraints, all relationships optional.
 - **Audio** stored on-device (not synced), re-encoded to ~32 kbps AAC after the talk (~350 KB per 90s), retained 30 days. It is uploaded only to be transcribed and not kept by us. Transcripts, metrics, feedback, profile sync. The privacy label must declare audio sent to a processor.
-- **Transcription** by Deepgram Nova-3 (`filler_words=true`, topic title as a keyterm), via the Worker. Release builds never hold the Deepgram key; Debug builds can call Deepgram directly with `-yapsoDeepgramKey <key>`.
+- **Transcription** by Deepgram Nova-3 (`filler_words=true`, topic title as a keyterm), via the Worker. Release builds never hold the Deepgram key; Debug builds can call Deepgram directly with `DEEPGRAM_DEV_KEY` from the gitignored `Config/Secrets.xcconfig`.
   - **Daily talks: Deepgram only.** Offline, the talk is saved and the results screen says a connection is needed, then analyzes automatically once one appears.
   - **Practice talks: Deepgram, falling back to on-device** `SpeechAnalyzer` / `SpeechTranscriber` when offline or when Deepgram fails. Results then say the offline model was used and offer "Transcribe again online" once connected. The offline model is reserved and downloaded at launch; it does not work in the Simulator.
 - **Delivery metrics** computed on-device. Fillers come from the transcript (both transcribers keep "um", "uh"; "like,", "you know" are detected from context). Pauses are measured from audio levels, because transcribers fold silence into word time ranges.

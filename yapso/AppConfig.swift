@@ -40,11 +40,13 @@ nonisolated enum AppConfig {
     /// The Worker that proxies Deepgram and OpenAI. Unset until it's deployed (build step 4).
     static let apiBaseURL: URL? = nil
 
-    /// Launch with `-yapsoDeepgramKey <key>` (Debug only) to call Deepgram directly, before the Worker exists.
-    /// Launch arguments aren't persisted, so the key never lands on disk.
+    /// Debug builds call Deepgram directly with `DEEPGRAM_DEV_KEY` from the gitignored `Config/Secrets.xcconfig`,
+    /// or `-yapsoDeepgramKey <key>` at launch. Release builds have neither and go through the Worker.
     static var deepgramKey: String? {
         #if DEBUG
-        return UserDefaults.standard.string(forKey: "yapsoDeepgramKey").flatMap { $0.isEmpty ? nil : $0 }
+        let key = UserDefaults.standard.string(forKey: "yapsoDeepgramKey")
+            ?? Bundle.main.object(forInfoDictionaryKey: "YapsoDeepgramDevKey") as? String
+        return key.flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0.trimmingCharacters(in: .whitespaces) }
         #else
         return nil
         #endif

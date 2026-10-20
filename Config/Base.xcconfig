@@ -1,0 +1,6 @@
+// Build settings shared by every configuration of the app target.
+// Local secrets go in the gitignored Secrets.xcconfig next to this file (copy Secrets.example.xcconfig).
+#include? "Secrets.xcconfig"
+
+// The dev Deepgram key reaches Info.plist in Debug builds only, so it never ships.
+YAPSO_DEEPGRAM_DEV_KEY[config=Debug] = $(DEEPGRAM_DEV_KEY)

@@ -8,6 +8,7 @@
 
 /* Begin PBXFileReference section */
 		9EE2BF6C3086D5A4008C27DA /* yapso.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = yapso.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9EE2BFA03086F000008C27DA /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -46,8 +47,17 @@
 			isa = PBXGroup;
 			children = (
 				9EE2BF6E3086D5A4008C27DA /* yapso */,
+				9EE2BFA13086F000008C27DA /* Config */,
 				9EE2BF6D3086D5A4008C27DA /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		9EE2BFA13086F000008C27DA /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				9EE2BFA03086F000008C27DA /* Base.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		9EE2BF6D3086D5A4008C27DA /* Products */ = {
@@ -261,6 +271,7 @@
 		};
 		9EE2BF783086D5A7008C27DA /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9EE2BFA03086F000008C27DA /* Base.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -295,6 +306,7 @@
 		};
 		9EE2BF793086D5A7008C27DA /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9EE2BFA03086F000008C27DA /* Base.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
