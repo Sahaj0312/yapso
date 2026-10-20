@@ -1,9 +1,9 @@
 import AVFoundation
 import Speech
 
-/// On-device transcription via SpeechAnalyzer. Needs no speech-recognition permission and keeps
-/// disfluencies ("um", "uh", "like,"), which the filler metrics rely on.
-nonisolated enum Transcriber {
+/// On-device transcription via SpeechAnalyzer: the offline fallback for practice talks. Less accurate than
+/// `CloudTranscriber`, but needs no network or speech-recognition permission and keeps disfluencies ("um", "uh").
+nonisolated enum OnDeviceTranscriber {
     static func locale() async -> Locale {
         await SpeechTranscriber.supportedLocale(equivalentTo: Locale(identifier: "en-US")) ?? Locale(identifier: "en-US")
     }

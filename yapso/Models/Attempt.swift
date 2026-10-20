@@ -4,7 +4,7 @@ import SwiftData
 /// One reveal → research → speak → feedback run, daily or practice.
 ///
 /// CloudKit-compatible: every property is optional or defaulted, no unique constraints.
-/// Audio lives on-device only; `audioFileName` points into the local recordings folder and may be missing on other devices.
+/// Audio is kept on-device (it's uploaded only to be transcribed); `audioFileName` points into the local recordings folder and may be missing on other devices.
 @Model
 final class Attempt {
     var id: UUID = UUID()
@@ -24,6 +24,7 @@ final class Attempt {
     /// JSON `TranscriptTimeline`: timed words and measured pauses.
     var transcriptTimelineData: Data?
     var isTranscribed: Bool = false
+    var transcriptionSourceRaw: String?
     var audioFileName: String?
 
     // Delivery metrics, computed on-device.
@@ -58,6 +59,11 @@ final class Attempt {
     var feedbackStatus: FeedbackStatus {
         get { FeedbackStatus(rawValue: feedbackStatusRaw) ?? .notRequested }
         set { feedbackStatusRaw = newValue.rawValue }
+    }
+
+    var transcriptionSource: TranscriptionSource? {
+        get { transcriptionSourceRaw.flatMap(TranscriptionSource.init) }
+        set { transcriptionSourceRaw = newValue?.rawValue }
     }
 
     var contentFeedback: ContentFeedback? {

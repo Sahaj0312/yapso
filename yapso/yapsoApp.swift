@@ -25,8 +25,8 @@ struct yapsoApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                // Fetch the on-device speech model early so the first talk isn't stuck waiting on a download.
-                .task { await Transcriber.prepareModel() }
+                // Fetch the offline speech model early so a practice talk without network isn't stuck waiting on a download.
+                .task { await OnDeviceTranscriber.prepareModel() }
         }
         // Syncs via CloudKit automatically once the iCloud capability is enabled; local-only until then.
         .modelContainer(for: [Attempt.self, CoachProfile.self])

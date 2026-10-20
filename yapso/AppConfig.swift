@@ -37,5 +37,18 @@ nonisolated enum AppConfig {
         #endif
     }
 
+    /// The Worker that proxies Deepgram and OpenAI. Unset until it's deployed (build step 4).
+    static let apiBaseURL: URL? = nil
+
+    /// Launch with `-yapsoDeepgramKey <key>` (Debug only) to call Deepgram directly, before the Worker exists.
+    /// Launch arguments aren't persisted, so the key never lands on disk.
+    static var deepgramKey: String? {
+        #if DEBUG
+        return UserDefaults.standard.string(forKey: "yapsoDeepgramKey").flatMap { $0.isEmpty ? nil : $0 }
+        #else
+        return nil
+        #endif
+    }
+
     static let spinDuration: TimeInterval = 3.2
 }

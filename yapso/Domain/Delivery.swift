@@ -11,6 +11,13 @@ nonisolated struct TranscribedWord: Codable, Hashable, Sendable {
     }
 }
 
+/// Who produced a transcript. Daily talks are always transcribed in the cloud; practice talks fall back
+/// to the less accurate on-device model when there's no connection.
+nonisolated enum TranscriptionSource: String, Codable, Sendable {
+    case cloud
+    case onDevice
+}
+
 nonisolated struct Pause: Codable, Hashable, Sendable {
     var start: Double
     var end: Double

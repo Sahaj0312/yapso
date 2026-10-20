@@ -7,7 +7,14 @@ struct ResultsView: View {
     let history: [Attempt]
     let streak: Int
 
-    @State private var errorMessage: String?
+    init(attempt: Attempt, history: [Attempt], streak: Int) {
+        self.attempt = attempt
+        self.history = history
+        self.streak = streak
+    }
+
+    @State private var error: Error?
+    private var connectivity = Connectivity.shared
 
     var body: some View {
         ScrollView {
@@ -31,20 +38,29 @@ struct ResultsView: View {
         }
         .scrollIndicators(.hidden)
         .task(id: attempt.id) { await transcribe() }
+        // An offline talk is saved on the phone; analyze it the moment the connection comes back.
+        .onChange(of: connectivity.isOnline) { _, online in
+            if online, error != nil { Task { await transcribe() } }
+        }
     }
 
     @ViewBuilder
     private var content: some View {
         if attempt.isTranscribed {
             if let timeline = attempt.transcriptTimeline, !timeline.words.isEmpty {
+                if attempt.transcriptionSource == .onDevice {
+                    OfflineModelNotice(canRetry: connectivity.isOnline) { Task { await retranscribeOnline() } }
+                }
                 MetricGrid(attempt: attempt, history: history)
                 TranscriptSection(timeline: timeline)
             } else {
                 EmptyTalkCard()
             }
-        } else if let errorMessage {
+        } else if let error, TranscriptionError.isOffline(error) {
+            OfflineCard()
+        } else if let error {
             VStack(alignment: .leading, spacing: 12) {
-                Text(errorMessage).foregroundStyle(.secondary)
+                Text("Couldn't transcribe this talk. \(error.localizedDescription)").foregroundStyle(.secondary)
                 Button("Try again") { Task { await transcribe() } }
                     .buttonStyle(SecondaryButtonStyle())
             }
@@ -54,7 +70,7 @@ struct ResultsView: View {
         } else {
             HStack(spacing: 10) {
                 ProgressView()
-                Text("Transcribing on your phone…").foregroundStyle(.secondary)
+                Text("Transcribing…").foregroundStyle(.secondary)
             }
             .transition(.opacity)
         }
@@ -66,12 +82,18 @@ struct ResultsView: View {
     }
 
     private func transcribe() async {
-        errorMessage = nil
+        withAnimation { error = nil }
         do {
             try await AttemptProcessor.transcribeIfNeeded(attempt)
         } catch {
-            errorMessage = "Couldn't transcribe this talk. \(error.localizedDescription)"
+            withAnimation { self.error = error }
         }
+    }
+
+    /// Replaces an offline-model transcript with a cloud one now that there's a connection.
+    private func retranscribeOnline() async {
+        attempt.isTranscribed = false
+        await transcribe()
     }
 }
 
@@ -215,6 +237,45 @@ private struct TranscriptSection: View {
             result += piece
         }
         return result
+    }
+}
+
+/// A daily talk recorded without a connection: it's saved, and analysis needs the internet.
+private struct OfflineCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("You're offline", systemImage: "wifi.slash")
+                .font(.title3.weight(.semibold))
+            Text("Your talk is saved on your phone. Connect to Wi-Fi or cellular and it'll be analyzed right away.")
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16))
+    }
+}
+
+/// A practice talk transcribed by the less accurate on-device model because there was no connection.
+private struct OfflineModelNotice: View {
+    let canRetry: Bool
+    let onRetry: () -> Void
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: "wifi.slash")
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Transcribed with the offline model. For more accurate results, connect to the internet.")
+                if canRetry {
+                    Button("Transcribe again online", action: onRetry)
+                        .font(.footnote.weight(.semibold))
+                }
+            }
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 12))
     }
 }
 
