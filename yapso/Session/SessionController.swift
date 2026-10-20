@@ -25,11 +25,19 @@ final class SessionController {
 
     private var countdownTask: Task<Void, Never>?
 
+    /// Must stay free of side effects: SwiftUI re-runs `SessionView.init` on every parent update and throws
+    /// away the extra controllers, and a stray `tick()` from one of those would end a talk in progress.
     init(attempt: Attempt) {
         self.attempt = attempt
-        self.stage = .researching(deadline: attempt.timeline.researchDeadline)
+        self.stage = switch attempt.timeline.phase(now: .now) {
+        case .revealing(let landsAt): .revealing(landsAt: landsAt)
+        case .researching(let deadline): .researching(deadline: deadline)
+        case .awaitingSpeech: .countdown(3)
+        case .speaking(let cap): .speaking(cap: cap)
+        case .finished: .finished
+        case .forfeited: .forfeited
+        }
         recorder.onFinish = { [weak self] in self?.finish(at: .now) }
-        tick()
     }
 
     func tick(now: Date = .now) {
