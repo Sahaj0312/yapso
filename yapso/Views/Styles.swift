@@ -1,13 +1,16 @@
 import SwiftUI
 
-/// Solid, full-width, ink-on-paper button. Inverts in dark mode.
+/// Solid, full-width button: ink on paper (inverting in dark mode), or ember for the moment's main action.
 struct PrimaryButtonStyle: ButtonStyle {
+    enum Fill { case primary, ember }
+    var fill: Fill = .primary
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.semibold))
             .frame(maxWidth: .infinity, minHeight: 54)
-            .foregroundStyle(Color.paper)
-            .background(Color.primary, in: .rect(cornerRadius: 14))
+            .foregroundStyle(fill == .ember ? Color.white : Color.paper)
+            .background(fill == .ember ? Color.ember : Color.primary, in: .rect(cornerRadius: 14))
             .opacity(configuration.isPressed ? 0.75 : 1)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.snappy(duration: 0.15), value: configuration.isPressed)

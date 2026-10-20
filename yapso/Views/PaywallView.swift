@@ -68,7 +68,7 @@ struct PaywallView: View {
                 planRow(.monthly, title: "Monthly", price: "$5.99 / month", note: nil)
 
                 Button("Start Pro") { close() }
-                    .buttonStyle(PrimaryButtonStyle())
+                    .buttonStyle(PrimaryButtonStyle(fill: .ember))
                     .padding(.top, 6)
                     .sensoryFeedback(.success, trigger: plan)
 
@@ -109,6 +109,7 @@ struct PaywallView: View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: symbol)
                 .font(.title3)
+                .foregroundStyle(Color.ember)
                 .frame(width: 28)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.headline)
@@ -129,7 +130,7 @@ struct PaywallView: View {
             HStack {
                 Image(systemName: selected ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(selected ? .primary : .tertiary)
+                    .foregroundStyle(selected ? Color.ember : Color.primary.opacity(0.2))
                     .contentTransition(.symbolEffect(.replace))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.headline)
@@ -140,7 +141,7 @@ struct PaywallView: View {
             }
             .padding(16)
             .background(Color.card, in: .rect(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(selected ? Color.primary.opacity(0.85) : Color.hairline, lineWidth: selected ? 1.5 : 1))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(selected ? Color.ember : Color.hairline, lineWidth: selected ? 1.5 : 1))
             .contentShape(.rect)
         }
         .buttonStyle(.plain)

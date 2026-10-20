@@ -228,7 +228,7 @@ private struct TranscriptSection: View {
             HStack(spacing: 14) {
                 Text("filler")
                     .padding(.horizontal, 3)
-                    .background(Color.yellow.opacity(0.35), in: .rect(cornerRadius: 3))
+                    .background(Color.ember.opacity(0.22), in: .rect(cornerRadius: 3))
                 Text("— 2.0s —  pause")
             }
             .font(.caption)
@@ -257,13 +257,13 @@ private struct TranscriptSection: View {
             if index > 0 && word.text.first?.isWhitespace == true {
                 var space = AttributedString(" ")
                 if spans.contains(where: { $0.contains(index) && $0.contains(index - 1) }) {
-                    space.backgroundColor = Color.yellow.opacity(0.35)
+                    space.backgroundColor = Color.ember.opacity(0.22)
                 }
                 result += space
             }
             var piece = AttributedString(token)
             if fillerIndices.contains(index) {
-                piece.backgroundColor = Color.yellow.opacity(0.35)
+                piece.backgroundColor = Color.ember.opacity(0.22)
             }
             result += piece
         }

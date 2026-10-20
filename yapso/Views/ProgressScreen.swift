@@ -141,10 +141,10 @@ private struct TrendCard: View {
             band()
             ForEach(talks) { talk in
                 LineMark(x: .value("Talk", talk.revealedAt), y: .value(metric.rawValue, value(talk)))
-                    .foregroundStyle(Color.primary)
+                    .foregroundStyle(Color.ember)
                     .interpolationMethod(.monotone)
                 PointMark(x: .value("Talk", talk.revealedAt), y: .value(metric.rawValue, value(talk)))
-                    .foregroundStyle(Color.primary)
+                    .foregroundStyle(Color.ember)
                     .symbolSize(24)
             }
         }
@@ -176,9 +176,10 @@ private struct RatingGrid: View {
             }
             Chart(points, id: \.date) { point in
                 AreaMark(x: .value("Talk", point.date), yStart: .value("Floor", 1), yEnd: .value("Score", point.score))
-                    .foregroundStyle(Color.primary.opacity(0.06))
+                    .foregroundStyle(LinearGradient(colors: [Color.ember.opacity(0.18), Color.ember.opacity(0.02)],
+                                                    startPoint: .top, endPoint: .bottom))
                 LineMark(x: .value("Talk", point.date), y: .value("Score", point.score))
-                    .foregroundStyle(Color.primary)
+                    .foregroundStyle(Color.ember)
                     .lineStyle(StrokeStyle(lineWidth: 1.5, lineJoin: .round))
             }
             .chartYScale(domain: 1...5)

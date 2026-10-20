@@ -87,12 +87,14 @@ Rules:
 
 ## 8. Onboarding
 
-1. 2–3 screens explaining the rules (one spin a day, 10 min to research, 90s, no do-overs).
+0. Welcome: the live rolodex reel above the "yapso." wordmark and tagline, ember "Get started".
+1. One "How it works" page: three numbered steps (spin, 10 min to research, 90s), "One spin a day. No do-overs."
 2. Pain-point questions (single-tap):
    - When does speaking trip you up? Meetings / Interviews / Presentations / Explaining things to friends / I ramble in general
    - What happens? (multi) Blank out / Say "um" a lot / Ramble without a point / Speak too fast / Lose confidence
    - What's the goal? Career / School / Confidence / Just getting sharper
-3. Reflect-back screen ("You blank under pressure and ramble. Yapso trains exactly that…").
+   Single-choice questions advance on tap; each answer has an icon.
+3. "Your plan": the reflect-back headline ("In meetings, you blank under pressure and ramble."), what the coach will watch for (from the struggles), and the daily routine.
 4. Mic permission with a short rationale.
 5. Soft paywall (dismissible) → Home.
 
@@ -108,7 +110,7 @@ No speaking during onboarding. No account. Notification permission is requested 
 ## 10. Design
 
 - Tasteful and minimal, Notion-like. Not game-y, not tacky. Good motion and haptics, restrained.
-- **Paper and ink** (`Views/Theme.swift`): warm off-white paper (#F6F4EF) / warm near-black (#121110), cards one step up with a hairline edge, ink text, and one accent, **ember** (#D9542A / #F0703F), used only for the streak, the clocks' progress and the ratings.
+- **Paper and ink** (`Views/Theme.swift`): warm off-white paper (#F6F4EF) / warm near-black (#121110), cards one step up with a hairline edge, ink text, and one accent, **ember** (#D9542A / #F0703F), matching the icon's dot: the streak, the selected tab, the moment's main button (Spin, Get started, Start Pro), the clocks, countdown and waveform, filler highlights, ratings and charts, the coach note and "Next time" card, and onboarding selections. Everything else stays ink.
 - **Type:** New York serif (`Font.display`) for topic titles and headlines, including navigation titles; SF for everything else.
 - **Illustrations:** four ink line drawings (rolodex, microphone, whistle + stopwatch, seedling) generated with Codex image generation, stored as template images so they draw in the current ink color. App icon: a serif "y." with an ember dot, with a dark variant.
 - Follows system light/dark. Speaking screen uses the same theme, restrained.

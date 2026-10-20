@@ -7,7 +7,8 @@ struct CountdownView: View {
         VStack(spacing: 12) {
             Eyebrow("Speak in")
             Text("\(value)")
-                .font(.system(size: 120, weight: .light).monospacedDigit())
+                .font(.system(size: 120, weight: .light, design: .serif).monospacedDigit())
+                .foregroundStyle(Color.ember)
                 .contentTransition(.numericText(countsDown: true))
                 .animation(.snappy, value: value)
         }
@@ -79,7 +80,7 @@ struct WaveformView: View {
         HStack(alignment: .center, spacing: 3) {
             ForEach(levels.indices, id: \.self) { index in
                 Capsule()
-                    .fill(Color.primary.opacity(0.25 + Double(index) / Double(levels.count) * 0.6))
+                    .fill(Color.ember.opacity(0.3 + Double(index) / Double(levels.count) * 0.7))
                     .frame(height: max(3, CGFloat(levels[index]) * 44))
             }
         }

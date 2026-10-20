@@ -1,13 +1,13 @@
 import SwiftData
 import SwiftUI
 
-/// First launch: the rules, three quick questions that seed the coach, a reflect-back, the mic, then the soft paywall.
-/// No speaking happens here.
+/// First launch: a welcome, how it works, three quick questions that seed the coach, the plan they produce,
+/// the mic, then the soft paywall. No speaking happens here.
 struct OnboardingView: View {
     let onFinish: () -> Void
 
     @Environment(\.modelContext) private var context
-    @State private var step: Step = .oneTopic
+    @State private var step: Step = .welcome
     @State private var forward = true
     @State private var situation: Situation?
     @State private var struggles: [Struggle] = []
@@ -15,12 +15,14 @@ struct OnboardingView: View {
     @State private var showPaywall = false
 
     enum Step: Int, CaseIterable {
-        case oneTopic, tenMinutes, ninetySeconds, situation, struggles, goal, reflect, microphone
+        case welcome, howItWorks, situation, struggles, goal, plan, microphone
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            header
+            if step != .welcome {
+                header.transition(.opacity)
+            }
             ZStack {
                 page(step)
                     .id(step)
@@ -52,16 +54,16 @@ struct OnboardingView: View {
                 Image(systemName: "chevron.left")
                     .font(.body.weight(.semibold))
                     .frame(width: 32, height: 32)
+                    .contentShape(.rect)
             }
-            .opacity(step == .oneTopic ? 0 : 1)
-            .disabled(step == .oneTopic)
+            .buttonStyle(.plain)
             .accessibilityLabel("Back")
 
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.primary.opacity(0.08))
-                    Capsule().fill(Color.primary)
-                        .frame(width: proxy.size.width * Double(step.rawValue + 1) / Double(Step.allCases.count))
+                    Capsule().fill(Color.ember)
+                        .frame(width: proxy.size.width * Double(step.rawValue) / Double(Step.allCases.count - 1))
                 }
             }
             .frame(height: 4)
@@ -69,33 +71,33 @@ struct OnboardingView: View {
 
             Color.clear.frame(width: 32, height: 32)
         }
-        .foregroundStyle(.primary)
-        .padding(.bottom, 32)
+        .padding(.bottom, 28)
     }
 
+    @ViewBuilder
     private var footer: some View {
-        Button(primaryLabel) { advance() }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(!canContinue)
-            .opacity(canContinue ? 1 : 0.35)
-            .animation(.smooth(duration: 0.2), value: canContinue)
+        // Single-choice questions move on as soon as an answer is tapped.
+        if step != .situation && step != .goal {
+            Button(primaryLabel) { advance() }
+                .buttonStyle(PrimaryButtonStyle(fill: step == .welcome ? .ember : .primary))
+                .disabled(!canContinue)
+                .opacity(canContinue ? 1 : 0.35)
+                .animation(.smooth(duration: 0.2), value: canContinue)
+                .transition(.opacity)
+        }
     }
 
     private var primaryLabel: String {
         switch step {
-        case .reflect: "That's me"
+        case .welcome: "Get started"
+        case .plan: "Sounds right"
         case .microphone: Permissions.microphoneGranted ? "Continue" : "Allow microphone"
         default: "Continue"
         }
     }
 
     private var canContinue: Bool {
-        switch step {
-        case .situation: situation != nil
-        case .struggles: !struggles.isEmpty
-        case .goal: goal != nil
-        default: true
-        }
+        step == .struggles ? !struggles.isEmpty : true
     }
 
     private func advance() {
@@ -116,38 +118,37 @@ struct OnboardingView: View {
         withAnimation(.smooth(duration: 0.4)) { step = next }
     }
 
+    /// Lets the tap register visibly before a single-choice question moves on.
+    private func answerThenAdvance(_ apply: () -> Void) {
+        apply()
+        let current = step
+        Task {
+            try? await Task.sleep(for: .milliseconds(350))
+            if step == current { go(to: Step(rawValue: current.rawValue + 1)) }
+        }
+    }
+
     // MARK: - Pages
 
     @ViewBuilder
     private func page(_ step: Step) -> some View {
         switch step {
-        case .oneTopic:
-            RulePage(eyebrow: "Every day", title: "One topic you didn't choose.",
-                     detail: "Spin once a day for something niche, like how submarines dive or why Venice is sinking. Once it lands, it's yours.") {
-                RolodexDemo()
-            }
-        case .tenMinutes:
-            RulePage(eyebrow: "Then", title: "Ten minutes to learn it.",
-                     detail: "Research anywhere: Google, YouTube, a book. The clock keeps running while you're away, and we'll nudge you before time's up.") {
-                ClockDemo()
-            }
-        case .ninetySeconds:
-            RulePage(eyebrow: "Then", title: "Ninety seconds to explain it.",
-                     detail: "Speaking starts on its own. One take, no restarts. Then you get honest feedback on how clearly you explained it.") {
-                RingDemo()
-            }
+        case .welcome:
+            WelcomePage()
+        case .howItWorks:
+            HowItWorksPage()
         case .situation:
-            QuestionPage(title: "When does speaking trip you up?", subtitle: nil) {
+            QuestionPage(number: 1, title: "When does speaking trip you up?", subtitle: nil) {
                 ForEach(Situation.allCases) { option in
-                    OptionRow(title: option.rawValue, selected: situation == option, multiple: false) {
-                        situation = option
+                    OptionRow(title: option.rawValue, symbol: option.symbol, selected: situation == option, multiple: false) {
+                        answerThenAdvance { situation = option }
                     }
                 }
             }
         case .struggles:
-            QuestionPage(title: "What happens?", subtitle: "Pick all that apply.") {
+            QuestionPage(number: 2, title: "What happens?", subtitle: "Pick all that apply.") {
                 ForEach(Struggle.allCases) { option in
-                    OptionRow(title: option.rawValue, selected: struggles.contains(option), multiple: true) {
+                    OptionRow(title: option.rawValue, symbol: option.symbol, selected: struggles.contains(option), multiple: true) {
                         if let index = struggles.firstIndex(of: option) {
                             struggles.remove(at: index)
                         } else {
@@ -157,24 +158,33 @@ struct OnboardingView: View {
                 }
             }
         case .goal:
-            QuestionPage(title: "What's it for?", subtitle: nil) {
+            QuestionPage(number: 3, title: "What's it for?", subtitle: nil) {
                 ForEach(Goal.allCases) { option in
-                    OptionRow(title: option.rawValue, selected: goal == option, multiple: false) {
-                        goal = option
+                    OptionRow(title: option.rawValue, symbol: option.symbol, selected: goal == option, multiple: false) {
+                        answerThenAdvance { goal = option }
                     }
                 }
             }
-        case .reflect:
-            ReflectPage(text: reflection)
+        case .plan:
+            PlanPage(headline: headline, watchFor: struggles.map(\.watchFor), closer: goal?.closer)
         case .microphone:
-            RulePage(eyebrow: "One last thing", title: "Yapso needs to hear you.",
-                     detail: "Your talk is transcribed so your coach can give feedback. The recording stays on your phone for 30 days, then it's deleted.") {
+            VStack(alignment: .leading, spacing: 0) {
                 Illustration(name: "IllustrationMicrophone", height: 220)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Eyebrow("One last thing").padding(.bottom, 10)
+                Text("Yapso needs to hear you.")
+                    .font(.display)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Your talk is transcribed so your coach can give feedback. The recording stays on your phone for 30 days, then it's deleted.")
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 12)
+                    .padding(.bottom, 32)
             }
         }
     }
 
-    /// `-yapsoOnboardingStep <0-7|paywall>` (Debug only) opens on that page with sample answers, for screenshots.
+    /// `-yapsoOnboardingStep <0-6|paywall>` (Debug only) opens on that page with sample answers, for screenshots.
     private func jumpForDebugging() {
         #if DEBUG
         guard let raw = UserDefaults.standard.string(forKey: "yapsoOnboardingStep") else { return }
@@ -192,20 +202,16 @@ struct OnboardingView: View {
 
     // MARK: - Answers
 
-    /// "In meetings, you blank under pressure and ramble." plus how Yapso trains it.
-    private var reflection: String {
+    /// "In meetings, you blank under pressure and ramble."
+    private var headline: String {
         let habits = struggles.map(\.habit)
         let list: String = switch habits.count {
         case 0: "lose the thread"
         case 1: habits[0]
         default: habits.dropLast().joined(separator: ", ") + " and " + habits.last!
         }
-        let opener = situation?.phrase.map { "\($0), you \(list)." } ?? "You \(list)."
-        let training = "Yapso trains exactly that: a topic you didn't pick, ten minutes to get it, and ninety seconds to say it clearly, every day."
-        let focus = struggles.first.map { " Your coach will watch for \($0.watchFor) from day one." } ?? ""
-        return [opener.prefix(1).uppercased() + opener.dropFirst(), training + focus, goal?.closer ?? ""]
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n\n")
+        let sentence = situation?.phrase.map { "\($0), you \(list)." } ?? "You \(list)."
+        return sentence.prefix(1).uppercased() + sentence.dropFirst()
     }
 
     private func saveAnswers() {
@@ -232,6 +238,16 @@ private enum Situation: String, CaseIterable, Identifiable {
     case general = "I ramble in general"
     var id: Self { self }
 
+    var symbol: String {
+        switch self {
+        case .meetings: "person.3"
+        case .interviews: "briefcase"
+        case .presentations: "rectangle.on.rectangle"
+        case .friends: "bubble.left.and.bubble.right"
+        case .general: "scribble"
+        }
+    }
+
     var phrase: String? {
         switch self {
         case .meetings: "in meetings"
@@ -251,6 +267,16 @@ private enum Struggle: String, CaseIterable, Identifiable {
     case confidence = "I lose confidence"
     var id: Self { self }
 
+    var symbol: String {
+        switch self {
+        case .blank: "cloud.fog"
+        case .um: "ellipsis.bubble"
+        case .ramble: "arrow.triangle.swap"
+        case .fast: "hare"
+        case .confidence: "arrow.down.right"
+        }
+    }
+
     var habit: String {
         switch self {
         case .blank: "blank under pressure"
@@ -263,11 +289,11 @@ private enum Struggle: String, CaseIterable, Identifiable {
 
     var watchFor: String {
         switch self {
-        case .blank: "the moments you freeze"
-        case .um: "your fillers"
-        case .ramble: "whether you land your point"
-        case .fast: "your pace"
-        case .confidence: "where you start to hedge"
+        case .blank: "The moments you freeze"
+        case .um: "Your fillers"
+        case .ramble: "Whether you land your point"
+        case .fast: "Your pace"
+        case .confidence: "Where you start to hedge"
         }
     }
 }
@@ -279,6 +305,15 @@ private enum Goal: String, CaseIterable, Identifiable {
     case sharper = "Just getting sharper"
     var id: Self { self }
 
+    var symbol: String {
+        switch self {
+        case .career: "chart.line.uptrend.xyaxis"
+        case .school: "graduationcap"
+        case .confidence: "figure.stand"
+        case .sharper: "sparkles"
+        }
+    }
+
     var closer: String {
         switch self {
         case .career: "Ninety seconds a day adds up to the person who explains things well at work."
@@ -289,34 +324,88 @@ private enum Goal: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - Page layouts
+// MARK: - Pages
 
-private struct RulePage<Visual: View>: View {
-    let eyebrow: String
-    let title: String
-    let detail: String
-    @ViewBuilder let visual: Visual
+/// The brand moment: the real reel spinning sample topics above the wordmark.
+private struct WelcomePage: View {
+    @State private var shown = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            visual
-                .frame(maxWidth: .infinity)
-                .frame(maxHeight: .infinity)
-            Eyebrow(eyebrow).padding(.bottom, 10)
-            Text(title)
-                .font(.display)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(detail)
-                .font(.body)
+            RolodexDemo()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            (Text("yapso").foregroundStyle(.primary) + Text(".").foregroundStyle(Color.ember))
+                .font(.system(size: 64, weight: .semibold, design: .serif))
+                .padding(.bottom, 12)
+            Text("One topic a day. Ten minutes to learn it. Ninety seconds to explain it.")
+                .font(.title3)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 12)
-                .padding(.bottom, 32)
+                .padding(.bottom, 36)
         }
+        .opacity(shown ? 1 : 0)
+        .onAppear { withAnimation(.smooth(duration: 0.8)) { shown = true } }
+    }
+}
+
+/// The rules on one page: three numbered steps instead of three screens.
+private struct HowItWorksPage: View {
+    @State private var shown = false
+
+    private let steps: [(title: String, detail: String)] = [
+        ("Spin for today's topic", "Something niche, like how submarines dive. Once it lands, it's yours."),
+        ("Ten minutes to learn it", "Research anywhere you like. The clock keeps running while you're away."),
+        ("Ninety seconds to explain it", "Speaking starts on its own. One take, then honest feedback from your coach."),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Eyebrow("How it works").padding(.bottom, 10)
+            Text("A small daily rep.")
+                .font(.display)
+                .padding(.bottom, 32)
+
+            ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                HStack(alignment: .firstTextBaseline, spacing: 18) {
+                    Text("\(index + 1)")
+                        .font(.system(size: 40, weight: .semibold, design: .serif))
+                        .foregroundStyle(Color.ember)
+                        .frame(width: 28, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(step.title).font(.headline)
+                        Text(step.detail)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.vertical, 18)
+                .overlay(alignment: .bottom) {
+                    if index < steps.count - 1 { Rectangle().fill(Color.hairline).frame(height: 1) }
+                }
+                .opacity(shown ? 1 : 0)
+                .offset(y: shown ? 0 : 10)
+                .animation(.smooth(duration: 0.6).delay(0.15 + Double(index) * 0.15), value: shown)
+            }
+
+            Spacer()
+
+            Label("One spin a day. No do-overs.", systemImage: "flame.fill")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Color.ember)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color.ember.opacity(0.1), in: .capsule)
+                .padding(.bottom, 24)
+                .opacity(shown ? 1 : 0)
+                .animation(.smooth(duration: 0.6).delay(0.7), value: shown)
+        }
+        .onAppear { shown = true }
     }
 }
 
 private struct QuestionPage<Options: View>: View {
+    let number: Int
     let title: String
     let subtitle: String?
     @ViewBuilder let options: Options
@@ -324,6 +413,11 @@ private struct QuestionPage<Options: View>: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
+                Text("Question \(number) of 3")
+                    .font(.caption.weight(.semibold))
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Color.ember)
                 Text(title)
                     .font(.display)
                     .fixedSize(horizontal: false, vertical: true)
@@ -341,24 +435,29 @@ private struct QuestionPage<Options: View>: View {
 
 private struct OptionRow: View {
     let title: String
+    let symbol: String
     let selected: Bool
     let multiple: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack {
+            HStack(spacing: 14) {
+                Image(systemName: symbol)
+                    .font(.body)
+                    .foregroundStyle(selected ? Color.ember : .secondary)
+                    .frame(width: 24)
                 Text(title).font(.body.weight(.medium))
                 Spacer()
                 Image(systemName: selected ? (multiple ? "checkmark.square.fill" : "checkmark.circle.fill") : (multiple ? "square" : "circle"))
                     .font(.title3)
-                    .foregroundStyle(selected ? .primary : .tertiary)
+                    .foregroundStyle(selected ? Color.ember : Color.primary.opacity(0.2))
                     .contentTransition(.symbolEffect(.replace))
             }
             .padding(.horizontal, 18)
-            .frame(minHeight: 58)
-            .background(Color.card, in: .rect(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(selected ? Color.primary.opacity(0.85) : Color.hairline, lineWidth: selected ? 1.5 : 1))
+            .frame(minHeight: 60)
+            .background(selected ? Color.ember.opacity(0.08) : Color.card, in: .rect(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(selected ? Color.ember : Color.hairline, lineWidth: selected ? 1.5 : 1))
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -367,78 +466,96 @@ private struct OptionRow: View {
     }
 }
 
-private struct ReflectPage: View {
-    let text: String
+/// The answers turned into what the coach will do, so the questions visibly mattered.
+private struct PlanPage: View {
+    let headline: String
+    let watchFor: [String]
+    let closer: String?
+
     @State private var shown = false
 
     var body: some View {
-        let paragraphs = text.components(separatedBy: "\n\n")
-        VStack(alignment: .leading, spacing: 20) {
-            Eyebrow("Here's what we heard")
-            ForEach(Array(paragraphs.enumerated()), id: \.offset) { index, paragraph in
-                Text(paragraph)
-                    .font(index == 0 ? .display : .body)
-                    .foregroundStyle(index == 0 ? .primary : .secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .opacity(shown ? 1 : 0)
-                    .offset(y: shown ? 0 : 12)
-                    .animation(.smooth(duration: 0.7).delay(0.15 + Double(index) * 0.35), value: shown)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Eyebrow("Your plan")
+                    Text(headline)
+                        .font(.display)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .reveal(shown, order: 0)
+
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Your coach will watch for")
+                        .font(.subheadline.weight(.semibold))
+                    ForEach(watchFor.isEmpty ? ["Whether you land your point"] : watchFor, id: \.self) { item in
+                        HStack(spacing: 12) {
+                            Image(systemName: "scope")
+                                .foregroundStyle(Color.ember)
+                            Text(item)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(20)
+                .cardBackground()
+                .reveal(shown, order: 1)
+
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Every day")
+                        .font(.subheadline.weight(.semibold))
+                    planRow("dice", "A topic you didn't pick")
+                    planRow("timer", "Ten minutes to get it")
+                    planRow("waveform", "Ninety seconds to say it clearly")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(20)
+                .cardBackground()
+                .reveal(shown, order: 2)
+
+                if let closer {
+                    Text(closer)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .reveal(shown, order: 3)
+                }
             }
+            .padding(.bottom, 24)
         }
-        .frame(maxHeight: .infinity, alignment: .center)
+        .scrollIndicators(.hidden)
         .onAppear { shown = true }
+    }
+
+    private func planRow(_ symbol: String, _ text: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol).foregroundStyle(.secondary).frame(width: 20)
+            Text(text)
+        }
     }
 }
 
-// MARK: - Rule visuals
+private extension View {
+    func reveal(_ shown: Bool, order: Int) -> some View {
+        opacity(shown ? 1 : 0)
+            .offset(y: shown ? 0 : 12)
+            .animation(.smooth(duration: 0.6).delay(0.1 + Double(order) * 0.2), value: shown)
+    }
+}
 
 /// The real rolodex, looping on sample topics.
 private struct RolodexDemo: View {
     @State private var landsAt = Date.now.addingTimeInterval(AppConfig.spinDuration)
-    @State private var target = "How submarines control depth"
+    @State private var topic = Topic(id: "how-submarines-control-depth", title: "How submarines control depth", domain: "Technology")
 
     var body: some View {
-        RolodexView(target: target, domain: "Technology", landsAt: landsAt, pool: TopicStore.all)
+        RolodexView(target: topic.title, domain: topic.domain, landsAt: landsAt, pool: TopicStore.all)
             .id(landsAt)
             .task {
                 while !Task.isCancelled {
                     try? await Task.sleep(for: .seconds(AppConfig.spinDuration + 1.8))
-                    let next = TopicStore.all.randomElement()
-                    target = next?.title ?? target
+                    if let next = TopicStore.all.randomElement() { topic = next }
                     landsAt = .now.addingTimeInterval(AppConfig.spinDuration)
                 }
             }
-    }
-}
-
-/// A research clock ticking down from 10:00, fast-forwarded.
-private struct ClockDemo: View {
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            let elapsed = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 20) * 30
-            Text((600 - elapsed).clockString)
-                .font(.system(size: 88, weight: .semibold).monospacedDigit())
-                .contentTransition(.numericText(countsDown: true))
-                .animation(.smooth, value: elapsed)
-        }
-    }
-}
-
-/// The speaking ring filling over a few seconds, on a loop.
-private struct RingDemo: View {
-    var body: some View {
-        TimelineView(.animation) { context in
-            let progress = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 6) / 6
-            ZStack {
-                Circle().stroke(Color.primary.opacity(0.08), lineWidth: 6)
-                Circle()
-                    .trim(from: 0, to: progress)
-                    .stroke(Color.ember, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                Text((90 * (1 - progress)).clockString)
-                    .font(.system(size: 40, weight: .semibold).monospacedDigit())
-            }
-            .frame(width: 180, height: 180)
-        }
     }
 }

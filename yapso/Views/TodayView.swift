@@ -195,7 +195,7 @@ private struct ReadyView: View {
                 .padding(.top, 8)
             Spacer()
             Button("Spin", action: onSpin)
-                .buttonStyle(PrimaryButtonStyle())
+                .buttonStyle(PrimaryButtonStyle(fill: .ember))
         }
         .padding(24)
     }

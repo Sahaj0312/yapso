@@ -66,7 +66,7 @@ private struct FeedbackBody: View {
                     .font(.body)
                     .padding(.leading, 14)
                     .overlay(alignment: .leading) {
-                        Capsule().fill(Color.primary.opacity(0.25)).frame(width: 3)
+                        Capsule().fill(Color.ember).frame(width: 3)
                     }
                     .reveal(appeared, order: 0)
             }
@@ -117,14 +117,19 @@ private struct FeedbackBody: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Eyebrow("Next time")
+                Label("Next time", systemImage: "arrow.forward.circle.fill")
+                    .font(.caption.weight(.semibold))
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Color.ember)
                 Text(feedback.nextTimeTip)
-                    .font(.title3.weight(.medium))
+                    .font(.system(.title3, design: .serif).weight(.medium))
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
-            .cardBackground(cornerRadius: 16)
+            .background(Color.ember.opacity(0.08), in: .rect(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.ember.opacity(0.25)))
             .reveal(appeared, order: 8)
         }
         .onAppear {

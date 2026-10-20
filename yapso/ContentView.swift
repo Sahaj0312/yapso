@@ -20,13 +20,13 @@ struct ContentView: View {
     var body: some View {
         @Bindable var router = router
         TabView(selection: $router.tab) {
-            Tab("Today", systemImage: "sun.max", value: AppTab.today) { TodayView() }
-            Tab("History", systemImage: "clock.arrow.circlepath", value: AppTab.history) { HistoryView() }
-            Tab("Progress", systemImage: "chart.line.uptrend.xyaxis", value: AppTab.progress) { ProgressScreen() }
+            Tab("Today", systemImage: "sun.max", value: AppTab.today) { TodayView().tint(.primary) }
+            Tab("History", systemImage: "clock.arrow.circlepath", value: AppTab.history) { HistoryView().tint(.primary) }
+            Tab("Progress", systemImage: "chart.line.uptrend.xyaxis", value: AppTab.progress) { ProgressScreen().tint(.primary) }
         }
         .sensoryFeedback(.selection, trigger: router.tab)
-        // Ink, not system blue, for the selected tab and inline buttons.
-        .tint(.primary)
+        // Ember for the selected tab; each tab's content sets ink for its own buttons.
+        .tint(.ember)
         .environment(router)
         .onAppear { showOnboarding = !hasOnboarded || AppConfig.forceOnboarding }
         .onChange(of: hasOnboarded) { _, done in if !done { showOnboarding = true } }
