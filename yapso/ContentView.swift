@@ -25,6 +25,8 @@ struct ContentView: View {
             Tab("Progress", systemImage: "chart.line.uptrend.xyaxis", value: AppTab.progress) { ProgressScreen() }
         }
         .sensoryFeedback(.selection, trigger: router.tab)
+        // Ink, not system blue, for the selected tab and inline buttons.
+        .tint(.primary)
         .environment(router)
         .onAppear { showOnboarding = !hasOnboarded || AppConfig.forceOnboarding }
         .onChange(of: hasOnboarded) { _, done in if !done { showOnboarding = true } }

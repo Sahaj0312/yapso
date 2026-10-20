@@ -6,7 +6,7 @@ struct PrimaryButtonStyle: ButtonStyle {
         configuration.label
             .font(.body.weight(.semibold))
             .frame(maxWidth: .infinity, minHeight: 54)
-            .foregroundStyle(Color(uiColor: .systemBackground))
+            .foregroundStyle(Color.paper)
             .background(Color.primary, in: .rect(cornerRadius: 14))
             .opacity(configuration.isPressed ? 0.75 : 1)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
@@ -20,7 +20,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .font(.body.weight(.medium))
             .frame(maxWidth: .infinity, minHeight: 54)
             .foregroundStyle(.primary)
-            .background(Color.primary.opacity(0.06), in: .rect(cornerRadius: 14))
+            .cardBackground(cornerRadius: 14)
             .opacity(configuration.isPressed ? 0.6 : 1)
             .animation(.snappy(duration: 0.15), value: configuration.isPressed)
     }

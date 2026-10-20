@@ -9,11 +9,17 @@ struct HistoryView: View {
         NavigationStack {
             Group {
                 if past.isEmpty {
-                    ContentUnavailableView {
-                        Label("No talks yet", systemImage: "waveform")
-                    } description: {
+                    VStack(spacing: 14) {
+                        Illustration(name: "IllustrationSeedling", height: 120)
+                            .padding(.bottom, 10)
+                        Text("No talks yet")
+                            .font(.displaySmall)
                         Text("Every talk you give lands here, with its transcript, recording and feedback.")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
                     }
+                    .padding(32)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
                         ForEach(months, id: \.title) { month in
@@ -21,8 +27,10 @@ struct HistoryView: View {
                                 ForEach(month.attempts) { attempt in
                                     if attempt.endedAt != nil {
                                         NavigationLink(value: attempt.id) { HistoryRow(attempt: attempt) }
+                                            .listRowBackground(Color.paper)
                                     } else {
                                         HistoryRow(attempt: attempt)
+                                            .listRowBackground(Color.paper)
                                     }
                                 }
                             } header: {
@@ -31,8 +39,10 @@ struct HistoryView: View {
                         }
                     }
                     .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
             }
+            .background(Color.paper.ignoresSafeArea())
             .navigationTitle("History")
             .navigationDestination(for: UUID.self) { id in
                 if let attempt = attempts.first(where: { $0.id == id }) {
@@ -101,7 +111,8 @@ private struct HistoryRow: View {
                     .font(.subheadline.weight(.semibold).monospacedDigit())
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.primary.opacity(0.06), in: .capsule)
+                    .background(Color.ember.opacity(0.12), in: .capsule)
+                    .foregroundStyle(Color.ember)
                     .accessibilityLabel("Average rating \(score.formatted(.number.precision(.fractionLength(1)))) out of 5")
             }
         }

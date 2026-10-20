@@ -108,6 +108,9 @@ No speaking during onboarding. No account. Notification permission is requested 
 ## 10. Design
 
 - Tasteful and minimal, Notion-like. Not game-y, not tacky. Good motion and haptics, restrained.
+- **Paper and ink** (`Views/Theme.swift`): warm off-white paper (#F6F4EF) / warm near-black (#121110), cards one step up with a hairline edge, ink text, and one accent, **ember** (#D9542A / #F0703F), used only for the streak, the clocks' progress and the ratings.
+- **Type:** New York serif (`Font.display`) for topic titles and headlines, including navigation titles; SF for everything else.
+- **Illustrations:** four ink line drawings (rolodex, microphone, whistle + stopwatch, seedling) generated with Codex image generation, stored as template images so they draw in the current ink color. App icon: a serif "y." with an ember dot, with a dark variant.
 - Follows system light/dark. Speaking screen uses the same theme, restrained.
 - Spin sound off by default (toggle in Settings).
 - iPhone only, portrait. English only.

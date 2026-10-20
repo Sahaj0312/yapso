@@ -39,10 +39,12 @@ struct PaywallView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    Illustration(name: "IllustrationCoach", height: 72)
+                        .frame(maxWidth: .infinity)
                     VStack(alignment: .leading, spacing: 10) {
                         Eyebrow("Yapso Pro")
                         Text(headline)
-                            .font(.title.weight(.bold))
+                            .font(.displaySmall)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -85,7 +87,8 @@ struct PaywallView: View {
             }
         }
         .padding(24)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color.paper)
+        .tint(.primary)
         .onAppear { withAnimation(.smooth(duration: 0.6)) { appeared = true } }
     }
 
@@ -136,8 +139,8 @@ struct PaywallView: View {
                 Text(price).font(.subheadline.weight(.medium))
             }
             .padding(16)
-            .background(Color.primary.opacity(selected ? 0.07 : 0.03), in: .rect(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.primary.opacity(selected ? 0.8 : 0), lineWidth: 1.5))
+            .background(Color.card, in: .rect(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(selected ? Color.primary.opacity(0.85) : Color.hairline, lineWidth: selected ? 1.5 : 1))
             .contentShape(.rect)
         }
         .buttonStyle(.plain)

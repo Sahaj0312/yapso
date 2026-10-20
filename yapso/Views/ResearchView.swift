@@ -24,7 +24,7 @@ struct ResearchView: View {
             }
             .padding(.bottom, 10)
             Text(attempt.topicTitle)
-                .font(.largeTitle.weight(.bold))
+                .font(.display)
                 .fixedSize(horizontal: false, vertical: true)
                 .onLongPressGesture {
                     UIPasteboard.general.string = attempt.topicTitle
@@ -43,7 +43,7 @@ struct ResearchView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 ProgressView(value: 1 - remaining / total)
-                    .tint(.primary)
+                    .tint(.ember)
                     .padding(.top, 12)
             }
 

@@ -65,7 +65,7 @@ struct RolodexView: View {
     private func row(_ title: String, distance: Double, isResult: Bool) -> some View {
         let falloff = min(abs(distance) / 2.5, 1)
         return Text(title)
-            .font(.title2.weight(isResult ? .bold : .semibold))
+            .font(.system(.title2, design: .serif).weight(isResult ? .bold : .medium))
             .lineLimit(1)
             .minimumScaleFactor(0.6)
             .foregroundStyle(abs(distance) < 0.5 ? .primary : .secondary)

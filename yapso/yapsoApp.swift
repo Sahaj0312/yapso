@@ -11,6 +11,7 @@ import SwiftData
 @main
 struct yapsoApp: App {
     init() {
+        Theme.applyAppearance()
         #if DEBUG
         if AppConfig.resetData || DebugSeed.isRequested,
            let container = try? ModelContainer(for: Attempt.self, CoachProfile.self) {

@@ -33,7 +33,8 @@ struct OnboardingView: View {
             footer
         }
         .padding(24)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color.paper)
+        .tint(.primary)
         .sensoryFeedback(.impact(weight: .light), trigger: step)
         .onAppear(perform: jumpForDebugging)
         .fullScreenCover(isPresented: $showPaywall) {
@@ -168,9 +169,7 @@ struct OnboardingView: View {
         case .microphone:
             RulePage(eyebrow: "One last thing", title: "Yapso needs to hear you.",
                      detail: "Your talk is transcribed so your coach can give feedback. The recording stays on your phone for 30 days, then it's deleted.") {
-                Image(systemName: "mic")
-                    .font(.system(size: 56, weight: .light))
-                    .frame(maxWidth: .infinity, minHeight: 200)
+                Illustration(name: "IllustrationMicrophone", height: 220)
             }
         }
     }
@@ -305,7 +304,7 @@ private struct RulePage<Visual: View>: View {
                 .frame(maxHeight: .infinity)
             Eyebrow(eyebrow).padding(.bottom, 10)
             Text(title)
-                .font(.largeTitle.weight(.bold))
+                .font(.display)
                 .fixedSize(horizontal: false, vertical: true)
             Text(detail)
                 .font(.body)
@@ -326,7 +325,7 @@ private struct QuestionPage<Options: View>: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 Text(title)
-                    .font(.largeTitle.weight(.bold))
+                    .font(.display)
                     .fixedSize(horizontal: false, vertical: true)
                 if let subtitle {
                     Text(subtitle).foregroundStyle(.secondary)
@@ -358,8 +357,8 @@ private struct OptionRow: View {
             }
             .padding(.horizontal, 18)
             .frame(minHeight: 58)
-            .background(Color.primary.opacity(selected ? 0.07 : 0.03), in: .rect(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.primary.opacity(selected ? 0.8 : 0), lineWidth: 1.5))
+            .background(Color.card, in: .rect(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(selected ? Color.primary.opacity(0.85) : Color.hairline, lineWidth: selected ? 1.5 : 1))
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -378,7 +377,7 @@ private struct ReflectPage: View {
             Eyebrow("Here's what we heard")
             ForEach(Array(paragraphs.enumerated()), id: \.offset) { index, paragraph in
                 Text(paragraph)
-                    .font(index == 0 ? .largeTitle.weight(.bold) : .body)
+                    .font(index == 0 ? .display : .body)
                     .foregroundStyle(index == 0 ? .primary : .secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .opacity(shown ? 1 : 0)
@@ -434,7 +433,7 @@ private struct RingDemo: View {
                 Circle().stroke(Color.primary.opacity(0.08), lineWidth: 6)
                 Circle()
                     .trim(from: 0, to: progress)
-                    .stroke(Color.primary, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .stroke(Color.ember, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Text((90 * (1 - progress)).clockString)
                     .font(.system(size: 40, weight: .semibold).monospacedDigit())

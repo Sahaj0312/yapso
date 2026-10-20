@@ -21,6 +21,7 @@ struct ProgressScreen: View {
                 }
             }
             .scrollIndicators(.hidden)
+            .background(Color.paper.ignoresSafeArea())
             .navigationTitle("Progress")
         }
     }
@@ -31,10 +32,13 @@ struct ProgressScreen: View {
             if talks.count >= 2 {
                 TrendCard(talks: Array(talks.suffix(30)))
             } else {
-                Text("Your trends start after two daily talks.")
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 160)
-                    .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16))
+                VStack(spacing: 16) {
+                    Illustration(name: "IllustrationSeedling", height: 90)
+                    Text("Your trends start after two daily talks.")
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, minHeight: 200)
+                .cardBackground(cornerRadius: 16)
             }
             FocusAreas(memory: profiles.first?.memory ?? CoachMemory())
         }
@@ -70,7 +74,7 @@ private struct StatsRow: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16))
+        .cardBackground(cornerRadius: 16)
     }
 }
 
@@ -183,7 +187,7 @@ private struct RatingGrid: View {
             .frame(height: 56)
         }
         .padding(14)
-        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 14))
+        .cardBackground(cornerRadius: 14)
         .accessibilityElement(children: .combine)
     }
 }
@@ -214,7 +218,7 @@ private struct FocusAreas: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
-                .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 14))
+                .cardBackground(cornerRadius: 14)
             }
             if !memory.strengths.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
@@ -246,7 +250,7 @@ private struct ProLock: View {
         }
         .padding(24)
         // Solid, not material: material makes the button's ink vibrant (washed-out grey).
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
+        .background(Color.card, in: .rect(cornerRadius: 20))
         .shadow(color: .black.opacity(0.12), radius: 24, y: 8)
         .padding(.horizontal, 24)
         .sheet(isPresented: $showPaywall) { PaywallView(context: .upgrade) }

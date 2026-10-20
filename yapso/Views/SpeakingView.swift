@@ -40,7 +40,7 @@ struct SpeakingView: View {
                 Circle().stroke(Color.primary.opacity(0.08), lineWidth: 3)
                 Circle()
                     .trim(from: 0, to: remaining / SessionTimeline.speakingCap)
-                    .stroke(Color.primary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .stroke(Color.ember, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .animation(.linear(duration: 0.1), value: remaining)
                 Text("\(secondsLeft)")

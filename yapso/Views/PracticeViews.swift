@@ -40,7 +40,7 @@ struct PracticeCard: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
-            .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16))
+            .cardBackground(cornerRadius: 16)
             .sheet(isPresented: $showPaywall) { PaywallView(context: .upgrade) }
         }
     }

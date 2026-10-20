@@ -59,6 +59,7 @@ struct SessionView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.paper.ignoresSafeArea())
         .animation(.smooth(duration: 0.5), value: stageKey)
         .task {
             while !Task.isCancelled {

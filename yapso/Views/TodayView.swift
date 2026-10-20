@@ -48,6 +48,7 @@ struct TodayView: View {
                     }
             }
         }
+        .background(Color.paper.ignoresSafeArea())
         .animation(.smooth(duration: 0.5), value: activeAttempt(now: now)?.id)
         .animation(.smooth(duration: 0.5), value: todaysResult(now: now)?.id)
         .task { Practice.dropAbandoned(attempts: attempts, in: context) }
@@ -181,10 +182,13 @@ private struct ReadyView: View {
         VStack(alignment: .leading, spacing: 0) {
             TodayHeader(streak: streak)
             Spacer()
+            Illustration(name: "IllustrationRolodex", height: 210)
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 40)
             Eyebrow("Today")
                 .padding(.bottom, 10)
             Text("Your topic is ready.")
-                .font(.largeTitle.weight(.bold))
+                .font(.display)
             Text("10 minutes to research. 90 seconds to explain it. One go.")
                 .font(.body)
                 .foregroundStyle(.secondary)
@@ -215,6 +219,7 @@ struct TodayHeader: View {
                     .frame(width: 36, height: 36)
                     .contentShape(.rect)
             }
+            .buttonStyle(.plain)
             .accessibilityLabel("Settings")
         }
         .sheet(isPresented: $showSettings) { SettingsView() }
@@ -225,8 +230,14 @@ struct StreakLabel: View {
     let streak: Int
 
     var body: some View {
-        Label(streak == 1 ? "1 day" : "\(streak) days", systemImage: "flame")
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(streak > 0 ? .primary : .secondary)
+        Label {
+            Text(streak == 1 ? "1 day" : "\(streak) days")
+        } icon: {
+            Image(systemName: streak > 0 ? "flame.fill" : "flame")
+                .foregroundStyle(streak > 0 ? Color.ember : .secondary)
+                .symbolEffect(.bounce, value: streak)
+        }
+        .font(.subheadline.weight(.medium))
+        .foregroundStyle(streak > 0 ? .primary : .secondary)
     }
 }

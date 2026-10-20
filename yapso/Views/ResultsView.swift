@@ -32,7 +32,7 @@ struct ResultsView<Footer: View>: View {
                     }
                     Eyebrow(attempt.kind == .practice && streak != nil ? "Practice · \(attempt.topicDomain)" : attempt.topicDomain)
                     Text(attempt.topicTitle)
-                        .font(.largeTitle.weight(.bold))
+                        .font(.display)
                         .fixedSize(horizontal: false, vertical: true)
                     if streak == nil {
                         Text(subtitle)
@@ -48,6 +48,7 @@ struct ResultsView<Footer: View>: View {
             .padding(24)
         }
         .scrollIndicators(.hidden)
+        .background(Color.paper.ignoresSafeArea())
         .task(id: attempt.id) { await process() }
         // An offline talk is saved on the phone; analyze it the moment the connection comes back.
         .onChange(of: connectivity.isOnline) { _, online in
@@ -186,7 +187,7 @@ private struct MetricCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16))
+        .cardBackground(cornerRadius: 16)
         .onAppear {
             withAnimation(.smooth(duration: 0.9).delay(Double(order) * 0.08)) { shown = value }
         }
@@ -281,7 +282,7 @@ private struct OfflineCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16))
+        .cardBackground(cornerRadius: 16)
     }
 }
 
@@ -305,7 +306,7 @@ private struct OfflineModelNotice: View {
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 12))
+        .cardBackground(cornerRadius: 12)
     }
 }
 
@@ -365,6 +366,6 @@ private struct EmptyTalkCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16))
+        .cardBackground(cornerRadius: 16)
     }
 }

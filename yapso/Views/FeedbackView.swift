@@ -124,7 +124,7 @@ private struct FeedbackBody: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
-            .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 16))
+            .cardBackground(cornerRadius: 16)
             .reveal(appeared, order: 8)
         }
         .onAppear {
@@ -150,7 +150,7 @@ private struct RatingRow: View {
                 HStack(spacing: 4) {
                     ForEach(1...5, id: \.self) { step in
                         Capsule()
-                            .fill(filled && step <= rating.score ? Color.primary : Color.primary.opacity(0.1))
+                            .fill(filled && step <= rating.score ? Color.ember : Color.primary.opacity(0.1))
                             .frame(width: 16, height: 6)
                             .animation(.smooth.delay(0.25 + Double(order) * 0.1 + Double(step) * 0.05), value: filled)
                     }
@@ -209,7 +209,7 @@ private struct LockedFeedback: View {
                 }
                 .padding(24)
                 // Solid, not material: material makes the button's ink vibrant (washed-out grey).
-                .background(Color(uiColor: .secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
+                .background(Color.card, in: .rect(cornerRadius: 20))
                 .shadow(color: .black.opacity(0.12), radius: 24, y: 8)
                 .padding(.horizontal, 8)
             }
