@@ -55,7 +55,8 @@ enum DebugSeed {
 
         // The calibration that came first. Its result shows on Today with `-yapsoCalibrationResult`.
         let profile = SpeakingProfile(
-            type: .improviser,
+            // `-yapsoCardType <type>` previews another card.
+            type: UserDefaults.standard.string(forKey: "yapsoCardType").flatMap(SpeakerType.init) ?? .improviser,
             summary: "You pictured a relaxed Saturday from balcony coffee to the farmers market and a movie, shaping the answer as you went.",
             message: "I noticed you figure out what you think while you're saying it. Your Saturday came together in real time: coffee on the balcony, then the market, then \"maybe basketball\".\n\nThe details were great. Peaches and pour-over put me right there. What got in the way was the gaps between them, where the ums piled up while you picked the next thing.\n\nSo that's where we'll start: knowing your next beat before you reach it. For your first topic, pick three points before you speak.",
             strengths: ["A clear arc from morning to night", "Specific, memorable details"],
