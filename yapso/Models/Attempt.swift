@@ -21,6 +21,9 @@ final class Attempt {
     var endedAt: Date?
 
     var transcript: String = ""
+    /// JSON `TranscriptTimeline`: timed words and measured pauses.
+    var transcriptTimelineData: Data?
+    var isTranscribed: Bool = false
     var audioFileName: String?
 
     // Delivery metrics, computed on-device.
@@ -60,6 +63,11 @@ final class Attempt {
     var contentFeedback: ContentFeedback? {
         get { feedbackData.flatMap { try? JSONDecoder().decode(ContentFeedback.self, from: $0) } }
         set { feedbackData = newValue.flatMap { try? JSONEncoder().encode($0) } }
+    }
+
+    var transcriptTimeline: TranscriptTimeline? {
+        get { transcriptTimelineData.flatMap { try? JSONDecoder().decode(TranscriptTimeline.self, from: $0) } }
+        set { transcriptTimelineData = newValue.flatMap { try? JSONEncoder().encode($0) } }
     }
 
     var timeline: SessionTimeline {

@@ -22,7 +22,7 @@ Yapso trains two things at once: **articulating clearly under time pressure**, a
 ### Rules
 - One counted ("daily") attempt per local calendar day. Day resets at **local midnight**; an attempt revealed before midnight counts for the day it was revealed.
 - If a revealed daily attempt never reaches the speaking phase, it is forfeited (no streak credit) once the calendar day its research window ended in has passed. (A 23:55 reveal can still be spoken just after midnight.)
-- Mic + speech permission are requested **before** the topic can be revealed, so nobody burns a day on a permission prompt.
+- Mic permission is requested **before** the topic can be revealed, so nobody burns a day on a permission prompt. Notification permission is requested at the same moment (first spin) so the research nudges work. No speech-recognition permission is needed (SpeechAnalyzer runs on-device without it).
 
 ## 2. Topics
 
@@ -90,10 +90,10 @@ Rules:
    - What happens? (multi) Blank out / Say "um" a lot / Ramble without a point / Speak too fast / Lose confidence
    - What's the goal? Career / School / Confidence / Just getting sharper
 3. Reflect-back screen ("You blank under pressure and ramble. Yapso trains exactly that…").
-4. Mic + speech permission with a short rationale.
+4. Mic permission with a short rationale.
 5. Soft paywall (dismissible) → Home.
 
-No speaking during onboarding. No account. Notification permission is requested after the first completed attempt (daily reminder, default 18:00, only if today's yap isn't done).
+No speaking during onboarding. No account. Notification permission is requested at the first spin; the daily reminder (default 18:00, only if today's yap isn't done) reuses it.
 
 ## 9. App structure
 
@@ -115,7 +115,7 @@ No speaking during onboarding. No account. Notification permission is requested 
 - **SwiftData + CloudKit** sync from day one. Model rules: every property optional or defaulted, no unique constraints, all relationships optional.
 - **Audio** stored on-device only (not synced), retained 30 days. Transcripts, metrics, feedback, profile sync.
 - **Transcription** on-device via `SpeechAnalyzer` / `SpeechTranscriber`. Audio never leaves the phone.
-- **Delivery metrics** computed on-device from timestamped transcript.
+- **Delivery metrics** computed on-device. Fillers come from the transcript (SpeechTranscriber keeps "um", "uh", "like,", "you know"). Pauses are measured from audio levels, because the transcriber folds silence into the next word's time range. The speech model is reserved and downloaded at launch. On-device transcription does not work in the Simulator; test on a device.
 - **Backend:** Cloudflare Worker proxying OpenAI. Apple App Attest + per-device rate limits. API key only in the Worker. Model name configurable in Worker config (mini-tier default; eval against a stronger model on sample transcripts before launch).
 - **Analytics:** TelemetryDeck (events only, never transcripts/audio), added just before launch. No ATT prompt required.
 - **Payments:** RevenueCat, later.

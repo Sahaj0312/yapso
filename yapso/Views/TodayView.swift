@@ -18,12 +18,13 @@ struct TodayView: View {
                     .id(active.id)
                     .transition(.opacity)
             } else if let done = todaysDailyAttempt(now: now) {
-                DoneTodayView(attempt: done, streak: streak(now: now))
+                ResultsView(attempt: done, history: attempts, streak: streak(now: now))
                     .transition(.opacity)
             } else {
                 ReadyView(streak: streak(now: now)) { Task { await spin() } }
                     .transition(.opacity)
                     .task {
+                        if let demoFile = AppConfig.demoAttemptFile { insertDemoAttempt(fileName: demoFile) }
                         if AppConfig.autoSpin {
                             try? await Task.sleep(for: .seconds(1.5))
                             await spin()
@@ -61,10 +62,35 @@ struct TodayView: View {
         return Streak.current(completedDays: days, today: DayKey(now))
     }
 
+    private func insertDemoAttempt(fileName: String) {
+        guard let topic = TopicStore.all.first(where: { $0.id == "the-rosetta-stone" }) ?? TopicStore.all.first else { return }
+        let attempt = Attempt(kind: .daily, topic: topic, revealedAt: .now.addingTimeInterval(-700))
+        attempt.speakingStartedAt = .now.addingTimeInterval(-90)
+        attempt.endedAt = .now.addingTimeInterval(-74)
+        attempt.secondsUsed = 16
+        attempt.audioFileName = fileName
+        // The Simulator can't run on-device transcription; a `<file>.json` TranscriptTimeline stands in for it.
+        let timelineURL = Recordings.url(for: fileName).deletingPathExtension().appendingPathExtension("json")
+        if let data = try? Data(contentsOf: timelineURL),
+           let timeline = try? JSONDecoder().decode(TranscriptTimeline.self, from: data) {
+            let metrics = DeliveryAnalyzer.metrics(for: timeline, secondsUsed: attempt.secondsUsed)
+            attempt.transcript = timeline.text
+            attempt.transcriptTimeline = timeline
+            attempt.wordCount = metrics.wordCount
+            attempt.wordsPerMinute = metrics.wordsPerMinute
+            attempt.fillerCount = metrics.fillerCount
+            attempt.longestPauseSeconds = metrics.longestPause
+            attempt.isTranscribed = true
+        }
+        context.insert(attempt)
+        try? context.save()
+    }
+
     private func spin() async {
         // Permissions come before the reveal, so nobody burns a day on a prompt.
         let micGranted = Permissions.microphoneGranted ? true : await Permissions.requestMicrophone()
         guard micGranted else { micDenied = true; return }
+        await Permissions.requestNotificationsIfUndetermined()
 
         let used = Set(attempts.map(\.topicID))
         guard let topic = TopicPicker.pick(from: TopicStore.all, excluding: used) else { return }
@@ -99,32 +125,7 @@ private struct ReadyView: View {
     }
 }
 
-/// Placeholder until the feedback screen exists.
-private struct DoneTodayView: View {
-    let attempt: Attempt
-    let streak: Int
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            StreakLabel(streak: streak)
-            Spacer()
-            Eyebrow(attempt.topicDomain)
-                .padding(.bottom, 10)
-            Text(attempt.topicTitle)
-                .font(.largeTitle.weight(.bold))
-            Text("You spoke for \(attempt.secondsUsed.clockString).")
-                .font(.title3)
-                .padding(.top, 12)
-            Text("Feedback lands here soon. New topic tomorrow.")
-                .foregroundStyle(.secondary)
-                .padding(.top, 4)
-            Spacer()
-        }
-        .padding(24)
-    }
-}
-
-private struct StreakLabel: View {
+struct StreakLabel: View {
     let streak: Int
 
     var body: some View {

@@ -18,5 +18,15 @@ nonisolated enum AppConfig {
         #endif
     }
 
+    /// Launch with `-yapsoDemoAttempt <file in Recordings>` (Debug only) to create a finished attempt from
+    /// an existing recording, for exercising transcription and results where the mic is unavailable.
+    static var demoAttemptFile: String? {
+        #if DEBUG
+        return UserDefaults.standard.string(forKey: "yapsoDemoAttempt")
+        #else
+        return nil
+        #endif
+    }
+
     static let spinDuration: TimeInterval = 3.2
 }

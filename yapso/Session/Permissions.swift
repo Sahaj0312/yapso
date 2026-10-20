@@ -1,5 +1,5 @@
 import AVFoundation
-import Speech
+import UserNotifications
 
 nonisolated enum Permissions {
     static var microphoneGranted: Bool { AVAudioApplication.shared.recordPermission == .granted }
@@ -8,9 +8,10 @@ nonisolated enum Permissions {
         await AVAudioApplication.requestRecordPermission()
     }
 
-    static func requestSpeechRecognition() async -> Bool {
-        await withCheckedContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0 == .authorized) }
-        }
+    /// Asked once, at the first spin, so the "time's up" nudge works while the user researches elsewhere.
+    static func requestNotificationsIfUndetermined() async {
+        let center = UNUserNotificationCenter.current()
+        guard await center.notificationSettings().authorizationStatus == .notDetermined else { return }
+        _ = try? await center.requestAuthorization(options: [.alert, .sound])
     }
 }
