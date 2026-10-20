@@ -2,17 +2,20 @@ import SwiftUI
 
 /// A finished attempt: delivery metrics first, then the transcript, then the coach's feedback.
 /// Shown on Today (with the streak) and from History (without).
-struct ResultsView: View {
+struct ResultsView<Footer: View>: View {
     let attempt: Attempt
     /// All attempts, for 7-day baselines.
     let history: [Attempt]
     /// Today's streak; nil when opened from History.
     let streak: Int?
+    /// What comes after the feedback: practice on Today, a redo in History.
+    let footer: Footer
 
-    init(attempt: Attempt, history: [Attempt], streak: Int?) {
+    init(attempt: Attempt, history: [Attempt], streak: Int?, @ViewBuilder footer: () -> Footer) {
         self.attempt = attempt
         self.history = history
         self.streak = streak
+        self.footer = footer()
     }
 
     @State private var error: Error?
@@ -27,7 +30,7 @@ struct ResultsView: View {
                         TodayHeader(streak: streak)
                             .padding(.bottom, 24)
                     }
-                    Eyebrow(attempt.topicDomain)
+                    Eyebrow(attempt.kind == .practice && streak != nil ? "Practice · \(attempt.topicDomain)" : attempt.topicDomain)
                     Text(attempt.topicTitle)
                         .font(.largeTitle.weight(.bold))
                         .fixedSize(horizontal: false, vertical: true)
@@ -40,11 +43,7 @@ struct ResultsView: View {
 
                 content
 
-                if streak != nil {
-                    Text("New topic tomorrow.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+                footer
             }
             .padding(24)
         }

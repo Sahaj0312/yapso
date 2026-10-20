@@ -68,7 +68,10 @@ Rules:
 - Unlocks only after today's daily attempt is done.
 - Random new topic or redo of a past topic (from History). Same full flow (10:00 research, start early allowed, 90s).
 - Full AI feedback, labelled "Practice" in History. Does not affect streak, progress, trends, or coach profile.
-- Capped at ~5 analyses/device/day by the Worker.
+- Capped at 5 practice topics a day in the app (the Worker's per-device limits sit a little above).
+- Entry: a "Want another?" card under today's result, and "Redo this topic" on any past talk in History (sends you to Today).
+- The practice spin can be tapped to skip. During research, **Stop** abandons the topic (deleted, doesn't count). Practice never forfeits, so unspoken practice from earlier days is deleted at launch instead of auto-starting a recording.
+- A finished practice result shows on Today until "Back to today's talk".
 
 ## 6. Streaks
 

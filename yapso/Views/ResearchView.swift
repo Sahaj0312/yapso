@@ -5,14 +5,24 @@ struct ResearchView: View {
     let remaining: TimeInterval
     let total: TimeInterval
     let onReady: () -> Void
+    /// Practice only: give up on this topic.
+    var onStop: (() -> Void)?
 
     @State private var confirmingStart = false
     @State private var copied = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Eyebrow(attempt.topicDomain)
-                .padding(.bottom, 10)
+            HStack {
+                Eyebrow(attempt.kind == .practice ? "Practice · \(attempt.topicDomain)" : attempt.topicDomain)
+                Spacer()
+                if let onStop {
+                    Button("Stop", action: onStop)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.bottom, 10)
             Text(attempt.topicTitle)
                 .font(.largeTitle.weight(.bold))
                 .fixedSize(horizontal: false, vertical: true)

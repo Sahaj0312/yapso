@@ -13,17 +13,19 @@ nonisolated enum AppTab: String, Hashable {
 }
 
 struct ContentView: View {
-    @State private var tab = AppConfig.initialTab
+    @State private var router = AppRouter(tab: AppConfig.initialTab)
     @AppStorage(Preferences.hasOnboarded) private var hasOnboarded = false
     @State private var showOnboarding = false
 
     var body: some View {
-        TabView(selection: $tab) {
+        @Bindable var router = router
+        TabView(selection: $router.tab) {
             Tab("Today", systemImage: "sun.max", value: AppTab.today) { TodayView() }
             Tab("History", systemImage: "clock.arrow.circlepath", value: AppTab.history) { HistoryView() }
             Tab("Progress", systemImage: "chart.line.uptrend.xyaxis", value: AppTab.progress) { ProgressScreen() }
         }
-        .sensoryFeedback(.selection, trigger: tab)
+        .sensoryFeedback(.selection, trigger: router.tab)
+        .environment(router)
         .onAppear { showOnboarding = !hasOnboarded || AppConfig.forceOnboarding }
         .onChange(of: hasOnboarded) { _, done in if !done { showOnboarding = true } }
         .fullScreenCover(isPresented: $showOnboarding) {

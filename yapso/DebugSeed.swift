@@ -2,20 +2,22 @@
 import Foundation
 import SwiftData
 
-/// Launch with `-yapsoSeedHistory` (Debug only) to fill History and Progress with two weeks of sample talks.
+/// Launch with `-yapsoSeedHistory` (Debug only) to fill History and Progress with two weeks of sample talks,
+/// including one finished today.
 enum DebugSeed {
     static var isRequested: Bool { ProcessInfo.processInfo.arguments.contains("-yapsoSeedHistory") }
 
     static func seedHistory(in context: ModelContext) {
         let topics = TopicStore.all
-        guard topics.count >= 14,
+        guard topics.count >= 30,
               (try? context.fetchCount(FetchDescriptor<Attempt>())) == 0 else { return }
 
         let calendar = Calendar.current
-        for daysAgo in (1...14).reversed() where daysAgo != 6 && daysAgo != 10 {
-            let day = calendar.date(byAdding: .day, value: -daysAgo, to: .now)!
-            let progress = Double(14 - daysAgo) / 13
-            let attempt = Attempt(kind: .daily, topic: topics[daysAgo], revealedAt: day)
+        for daysAgo in (0...14).reversed() where daysAgo != 6 && daysAgo != 10 {
+            // Today's talk finished a few minutes ago, so Today shows its result and practice.
+            let day = daysAgo == 0 ? Date.now.addingTimeInterval(-900) : calendar.date(byAdding: .day, value: -daysAgo, to: .now)!
+            let progress = min(1, Double(14 - daysAgo) / 13)
+            let attempt = Attempt(kind: .daily, topic: topics[daysAgo + 15], revealedAt: day)
             attempt.speakingStartedAt = day.addingTimeInterval(600)
             attempt.secondsUsed = 55 + 30 * progress
             attempt.endedAt = attempt.speakingStartedAt!.addingTimeInterval(attempt.secondsUsed)
@@ -52,7 +54,7 @@ enum DebugSeed {
         }
 
         // A day that was revealed but never spoken.
-        let forfeited = Attempt(kind: .daily, topic: topics[6], revealedAt: calendar.date(byAdding: .day, value: -6, to: .now)!)
+        let forfeited = Attempt(kind: .daily, topic: topics[21], revealedAt: calendar.date(byAdding: .day, value: -6, to: .now)!)
         context.insert(forfeited)
 
         context.insert(CoachProfile(memory: CoachMemory(
@@ -64,6 +66,7 @@ enum DebugSeed {
             recentTips: ["End on one sentence about why it matters, then stop."]
         )))
         try? context.save()
+        UserDefaults.standard.set(true, forKey: Preferences.hasOnboarded)
     }
 }
 #endif

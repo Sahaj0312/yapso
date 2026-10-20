@@ -18,6 +18,15 @@ nonisolated enum AppConfig {
         #endif
     }
 
+    /// Launch with `-yapsoAutoPractice` (Debug only) to start a practice topic as soon as today's result shows.
+    static var autoPractice: Bool {
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("-yapsoAutoPractice")
+        #else
+        return false
+        #endif
+    }
+
     /// Launch with `-yapsoDemoAttempt <file in Recordings>` (Debug only) to create a finished attempt from
     /// an existing recording, for exercising transcription and results where the mic is unavailable.
     static var demoAttemptFile: String? {

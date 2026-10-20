@@ -24,6 +24,7 @@ final class SessionController {
     private(set) var errorMessage: String?
 
     private var countdownTask: Task<Void, Never>?
+    private var isAbandoned = false
 
     /// Must stay free of side effects: SwiftUI re-runs `SessionView.init` on every parent update and throws
     /// away the extra controllers, and a stray `tick()` from one of those would end a talk in progress.
@@ -42,7 +43,7 @@ final class SessionController {
 
     func tick(now: Date = .now) {
         self.now = now
-        guard countdownTask == nil else { return } // the countdown owns the stage while it runs
+        guard countdownTask == nil, !isAbandoned else { return } // the countdown owns the stage while it runs
 
         switch attempt.timeline.phase(now: now) {
         case .revealing(let landsAt):
@@ -69,6 +70,27 @@ final class SessionController {
     /// "I'm ready" during research.
     func startEarly() {
         beginCountdown()
+    }
+
+    /// Practice only: tapping through the spin starts the research clock now.
+    func skipReveal() {
+        guard attempt.kind == .practice, case .revealing = stage else { return }
+        attempt.revealedAt = .now
+        save()
+        ResearchNotifications.cancel(attemptID: attempt.id)
+        let id = attempt.id, title = attempt.topicTitle, deadline = attempt.timeline.researchDeadline
+        Task { await ResearchNotifications.schedule(attemptID: id, topicTitle: title, deadline: deadline) }
+        tick()
+    }
+
+    /// Practice only: gives up before speaking. Stops touching the attempt so the owner can delete it once
+    /// this screen is gone (deleting it while it's still rendered would crash).
+    func abandon() {
+        guard attempt.kind == .practice, attempt.speakingStartedAt == nil else { return }
+        isAbandoned = true
+        countdownTask?.cancel()
+        countdownTask = nil
+        ResearchNotifications.cancel(attemptID: attempt.id)
     }
 
     /// "Done" while speaking.

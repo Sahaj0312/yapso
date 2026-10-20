@@ -10,19 +10,32 @@ struct TodayView: View {
     @Query(sort: \Attempt.revealedAt, order: .reverse) private var attempts: [Attempt]
     @Environment(\.scenePhase) private var scenePhase
     @State private var micDenied = false
+    /// Practice attempts stopped during research: hidden at once, deleted once their screen is gone.
+    @State private var abandonedIDs: Set<UUID> = []
+    /// The practice result the user has closed, so Today shows the daily result again.
+    @AppStorage("dismissedPracticeID") private var dismissedPracticeID = ""
 
     var body: some View {
         let now = Date.now
         ZStack {
             if let active = activeAttempt(now: now) {
-                SessionView(attempt: active)
+                SessionView(attempt: active, onAbandon: abandon)
                     .id(active.id)
                     .transition(.opacity)
                     // A talk in progress owns the screen.
                     .toolbarVisibility(.hidden, for: .tabBar)
-            } else if let done = todaysDailyAttempt(now: now) {
-                ResultsView(attempt: done, history: attempts, streak: streak(now: now))
-                    .transition(.opacity)
+            } else if let done = todaysResult(now: now) {
+                ResultsView(attempt: done, history: attempts, streak: streak(now: now)) {
+                    resultsFooter(for: done)
+                }
+                .id(done.id)
+                .transition(.opacity)
+                .task {
+                    if AppConfig.autoPractice, done.kind == .daily, case .available = Practice.availability(attempts: attempts) {
+                        try? await Task.sleep(for: .seconds(1.5))
+                        await startPractice()
+                    }
+                }
             } else {
                 ReadyView(streak: streak(now: now)) { Task { await spin() } }
                     .transition(.opacity)
@@ -36,6 +49,8 @@ struct TodayView: View {
             }
         }
         .animation(.smooth(duration: 0.5), value: activeAttempt(now: now)?.id)
+        .animation(.smooth(duration: 0.5), value: todaysResult(now: now)?.id)
+        .task { Practice.dropAbandoned(attempts: attempts, in: context) }
         // Reschedules the week's reminders, skipping today once it's spun.
         .task(id: Attempt.dailyStarted(on: DayKey(now), in: attempts)) { await refreshReminder() }
         .onChange(of: scenePhase) { _, phase in
@@ -53,9 +68,10 @@ struct TodayView: View {
 
     private func activeAttempt(now: Date) -> Attempt? {
         attempts.first { attempt in
+            guard !abandonedIDs.contains(attempt.id) else { return false }
             switch attempt.timeline.phase(now: now) {
-            case .finished, .forfeited: false
-            default: true
+            case .finished, .forfeited: return false
+            default: return true
             }
         }
     }
@@ -64,9 +80,53 @@ struct TodayView: View {
         await DailyReminder.refresh(todayStarted: Attempt.dailyStarted(on: DayKey(.now), in: attempts))
     }
 
-    private func todaysDailyAttempt(now: Date) -> Attempt? {
+    /// The latest finished talk today: a just-finished practice until it's closed, otherwise the daily.
+    private func todaysResult(now: Date) -> Attempt? {
         let today = DayKey(now).rawValue
-        return attempts.first { $0.kind == .daily && $0.dayKey == today && $0.endedAt != nil }
+        let finished = attempts.filter { $0.dayKey == today && $0.endedAt != nil }
+        if let latest = finished.first, latest.kind == .practice, latest.id.uuidString != dismissedPracticeID {
+            return latest
+        }
+        return finished.first { $0.kind == .daily }
+    }
+
+    @ViewBuilder
+    private func resultsFooter(for attempt: Attempt) -> some View {
+        let availability = Practice.availability(attempts: attempts)
+        if attempt.kind == .practice {
+            VStack(spacing: 10) {
+                if case .available = availability {
+                    Button("Practice another topic") { Task { await startPractice() } }
+                        .buttonStyle(PrimaryButtonStyle())
+                }
+                Button("Back to today's talk") { dismissedPracticeID = attempt.id.uuidString }
+                    .buttonStyle(SecondaryButtonStyle())
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 24) {
+                PracticeCard(availability: availability) { Task { await startPractice() } }
+                Text("New topic tomorrow.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func startPractice() async {
+        if await Practice.start(attempts: attempts, in: context) == nil, !Permissions.microphoneGranted {
+            micDenied = true
+        }
+    }
+
+    private func abandon(_ attempt: Attempt) {
+        abandonedIDs.insert(attempt.id)
+        Task {
+            // After the session view's exit transition, so nothing reads the deleted attempt.
+            try? await Task.sleep(for: .seconds(1))
+            context.delete(attempt)
+            try? context.save()
+            abandonedIDs.remove(attempt.id)
+        }
     }
 
     private func streak(now: Date) -> Int {
