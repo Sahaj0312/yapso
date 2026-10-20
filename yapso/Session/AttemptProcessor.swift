@@ -1,4 +1,4 @@
-import Foundation
+import AVFoundation
 import SwiftData
 
 /// Turns a finished recording into a transcript and delivery metrics, on-device. Idempotent and safe to
@@ -15,10 +15,19 @@ enum AttemptProcessor {
         inFlight.insert(attempt.id)
         defer { inFlight.remove(attempt.id) }
 
-        async let transcription = Transcriber.transcribe(fileURL: url)
-        async let levels = Task.detached { try AudioLevels.frameLevels(fileURL: url) }.value
-        let (text, words) = try await transcription
-        let pauses = DeliveryAnalyzer.pauses(frameLevels: try await levels, frameDuration: AudioLevels.frameDuration)
+        // SpeechAnalyzer never finishes on a (near-)empty file, so those skip straight to "nothing said".
+        let audioSeconds = (try? AVAudioFile(forReading: url)).map { Double($0.length) / $0.fileFormat.sampleRate } ?? 0
+        let text: String
+        let words: [TranscribedWord]
+        let pauses: [Pause]
+        if audioSeconds < 0.3 {
+            (text, words, pauses) = ("", [], [])
+        } else {
+            async let transcription = withTimeout(seconds: 60) { try await Transcriber.transcribe(fileURL: url) }
+            async let levels = Task.detached { try AudioLevels.frameLevels(fileURL: url) }.value
+            (text, words) = try await transcription
+            pauses = DeliveryAnalyzer.pauses(frameLevels: try await levels, frameDuration: AudioLevels.frameDuration)
+        }
 
         let timeline = TranscriptTimeline(text: text, words: words, pauses: pauses)
         let metrics = DeliveryAnalyzer.metrics(for: timeline, secondsUsed: attempt.secondsUsed)

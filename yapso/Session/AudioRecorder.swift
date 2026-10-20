@@ -1,5 +1,8 @@
 import AVFoundation
 import Observation
+import os
+
+private let log = Logger(subsystem: "com.sahaj03.yapso", category: "recorder")
 
 /// Records the 90-second talk to a local file and publishes live levels for the waveform.
 /// Stops itself at the cap, and on any audio-session interruption (calls, Siri) — interruptions are bad luck.
@@ -19,37 +22,41 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     private var interruptionObserver: NSObjectProtocol?
 
     func start(url: URL, maxDuration: TimeInterval) async throws {
-        // Session activation and queue setup can block for a while; keep them off the main thread.
-        let prepared = try await Task.detached(priority: .userInitiated) {
+        // Activating the session can block for a moment; do it off the main thread.
+        try await Task.detached(priority: .userInitiated) {
             let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker])
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP])
             try session.setActive(true)
-
-            // Linear PCM in CAF: stays readable even if the app dies mid-recording.
-            let settings: [String: Any] = [
-                AVFormatIDKey: kAudioFormatLinearPCM,
-                AVSampleRateKey: 24_000,
-                AVNumberOfChannelsKey: 1,
-                AVLinearPCMBitDepthKey: 16,
-                AVLinearPCMIsFloatKey: false,
-                AVLinearPCMIsBigEndianKey: false,
-            ]
-            let recorder = try AVAudioRecorder(url: url, settings: settings)
-            recorder.isMeteringEnabled = true
-            guard recorder.prepareToRecord() else { throw RecorderError.couldNotStart }
-            return PreparedRecorder(recorder: recorder)
         }.value
 
-        let recorder = prepared.recorder
+        // Linear PCM in CAF: stays readable even if the app dies mid-recording.
+        let settings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVSampleRateKey: 24_000,
+            AVNumberOfChannelsKey: 1,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false,
+        ]
+        let recorder = try AVAudioRecorder(url: url, settings: settings)
         recorder.delegate = self
-        guard recorder.record(forDuration: maxDuration) else { throw RecorderError.couldNotStart }
+        recorder.isMeteringEnabled = true
+        guard recorder.prepareToRecord(), recorder.record(forDuration: maxDuration) else {
+            log.error("record(forDuration:) refused to start")
+            throw RecorderError.couldNotStart
+        }
+        log.info("recording started: \(url.lastPathComponent, privacy: .public)")
 
         self.recorder = recorder
         isRecording = true
         levels = Array(repeating: 0, count: Self.levelCount)
         interruptionObserver = NotificationCenter.default.addObserver(
             forName: AVAudioSession.interruptionNotification, object: AVAudioSession.sharedInstance(), queue: .main
-        ) { [weak self] _ in
+        ) { [weak self] notification in
+            // Only a new interruption (call, Siri) ends the talk; "interruption ended" notices are ignored.
+            let rawType = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+            guard rawType == AVAudioSession.InterruptionType.began.rawValue else { return }
+            log.info("audio session interrupted")
             MainActor.assumeIsolated { self?.stop() }
         }
         startMetering()
@@ -85,10 +92,12 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
     }
 
     nonisolated func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+        log.info("recording finished after \(recorder.currentTime, privacy: .public)s, successfully: \(flag, privacy: .public)")
         Task { @MainActor in self.finish() }
     }
 
     nonisolated func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
+        log.error("encode error: \(String(describing: error), privacy: .public)")
         Task { @MainActor in self.finish() }
     }
 
@@ -96,11 +105,6 @@ final class AudioRecorder: NSObject, AVAudioRecorderDelegate {
         case couldNotStart
         var errorDescription: String? { "Couldn't start recording. Check microphone access in Settings." }
     }
-}
-
-/// Hands a freshly prepared recorder from the background setup task to the main actor.
-nonisolated private struct PreparedRecorder: @unchecked Sendable {
-    let recorder: AVAudioRecorder
 }
 
 nonisolated enum Recordings {

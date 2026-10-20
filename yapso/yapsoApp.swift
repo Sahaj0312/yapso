@@ -10,6 +10,18 @@ import SwiftData
 
 @main
 struct yapsoApp: App {
+    init() {
+        #if DEBUG
+        if AppConfig.resetData {
+            try? FileManager.default.removeItem(at: Recordings.directory)
+            if let container = try? ModelContainer(for: Attempt.self, CoachProfile.self) {
+                try? container.mainContext.delete(model: Attempt.self)
+                try? container.mainContext.save()
+            }
+        }
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

@@ -28,5 +28,14 @@ nonisolated enum AppConfig {
         #endif
     }
 
+    /// Launch with `-yapsoResetData` (Debug only) to delete all attempts on launch, for retesting the daily flow.
+    static var resetData: Bool {
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("-yapsoResetData")
+        #else
+        return false
+        #endif
+    }
+
     static let spinDuration: TimeInterval = 3.2
 }
