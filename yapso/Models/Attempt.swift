@@ -63,6 +63,7 @@ final class Attempt {
     }
 
     var timeline: SessionTimeline {
-        SessionTimeline(kind: kind, revealedAt: revealedAt, speakingStartedAt: speakingStartedAt, endedAt: endedAt)
+        SessionTimeline(kind: kind, revealedAt: revealedAt, speakingStartedAt: speakingStartedAt, endedAt: endedAt,
+                        researchDuration: AppConfig.researchDuration)
     }
 }
