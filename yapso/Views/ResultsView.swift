@@ -65,7 +65,11 @@ struct ResultsView<Footer: View>: View {
                 }
                 MetricGrid(attempt: attempt, history: history)
                 TranscriptSection(timeline: timeline, audioURL: localAudioURL)
-                FeedbackSection(attempt: attempt, error: feedbackError) { Task { await process() } }
+                if attempt.kind == .calibration {
+                    if let profile = attempt.speakingProfile { SpeakingProfileView(profile: profile) }
+                } else {
+                    FeedbackSection(attempt: attempt, error: feedbackError) { Task { await process() } }
+                }
             } else {
                 EmptyTalkCard()
             }
@@ -91,7 +95,11 @@ struct ResultsView<Footer: View>: View {
 
     private var subtitle: String {
         let date = attempt.revealedAt.formatted(.dateTime.weekday(.wide).month(.wide).day())
-        return attempt.kind == .practice ? "\(date) · Practice" : date
+        switch attempt.kind {
+        case .practice: return "\(date) · Practice"
+        case .calibration: return "\(date) · Your first talk"
+        case .daily: return date
+        }
     }
 
     private var hasLocalAudio: Bool { localAudioURL != nil }
@@ -144,7 +152,7 @@ private struct MetricGrid: View {
             GridRow {
                 MetricCard(label: "Longest pause", value: attempt.longestPauseSeconds, unit: "s", order: 2,
                            baseline: baseline(\.longestPauseSeconds)) { String(format: "%.1f", $0) }
-                MetricCard(label: "Time used", value: attempt.secondsUsed, unit: "/ 1:30", order: 3,
+                MetricCard(label: "Time used", value: attempt.secondsUsed, unit: "/ \(attempt.timeline.speakingCap.clockString)", order: 3,
                            baseline: baseline(\.secondsUsed)) { $0.clockString }
             }
         }

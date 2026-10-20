@@ -2,7 +2,7 @@ import { HTTPError, json } from "./http";
 
 /// What the app sends. The prompt is built here, never by the client.
 interface FeedbackRequest {
-  kind: "daily" | "practice";
+  kind: "daily" | "practice" | "calibration";
   topic: { title: string; domain: string };
   transcript: string;
   metrics: { wordCount: number; wordsPerMinute: number; fillerCount: number; longestPause: number; secondsUsed: number };
@@ -16,6 +16,7 @@ interface FeedbackRequest {
 export async function feedback(request: Request, env: Env): Promise<Response> {
   const body = await parse(request);
   const isDaily = body.kind === "daily";
+  const isCalibration = body.kind === "calibration";
 
   // Under the app's 60s timeout, so a stalled model call fails cleanly and the app offers "Try again".
   const upstream = await fetch("https://api.openai.com/v1/responses", {
@@ -24,11 +25,15 @@ export async function feedback(request: Request, env: Env): Promise<Response> {
     headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: env.OPENAI_MODEL,
-      instructions,
-      input: describe(body),
+      instructions: isCalibration ? calibrationInstructions : instructions,
+      input: isCalibration ? describeCalibration(body) : describe(body),
       reasoning: { effort: env.OPENAI_REASONING },
       store: false,
-      text: { format: { type: "json_schema", name: "feedback", strict: true, schema: schema(isDaily) } },
+      text: {
+        format: isCalibration
+          ? { type: "json_schema", name: "speaking_profile", strict: true, schema: calibrationSchema }
+          : { type: "json_schema", name: "feedback", strict: true, schema: schema(isDaily) },
+      },
     }),
   });
   if (!upstream.ok) {
@@ -44,7 +49,7 @@ export async function feedback(request: Request, env: Env): Promise<Response> {
     console.error("openai output", JSON.stringify(result.output));
     throw new HTTPError(502, "feedback_failed");
   }
-  return json(JSON.parse(content.text));
+  return json(tidy(JSON.parse(content.text)));
 }
 
 async function parse(request: Request): Promise<FeedbackRequest> {
@@ -56,7 +61,7 @@ async function parse(request: Request): Promise<FeedbackRequest> {
   }
   // 90 seconds is ~300 words; anything far beyond that isn't a talk.
   const valid =
-    (body.kind === "daily" || body.kind === "practice") &&
+    (body.kind === "daily" || body.kind === "practice" || body.kind === "calibration") &&
     typeof body.topic?.title === "string" && body.topic.title.length <= 200 &&
     typeof body.transcript === "string" && body.transcript.trim().length > 0 && body.transcript.length <= 4000 &&
     typeof body.metrics === "object" &&
@@ -91,9 +96,20 @@ function describe(body: FeedbackRequest): string {
   return lines.join("\n");
 }
 
-/// Strict structured outputs can't count words, so length limits are regex patterns (max N whitespace-separated words).
+/// Strict structured outputs can't count words, so length limits are regex patterns. The prompt asks for `max` words;
+/// the pattern allows half as many again, because a model that hits a hard cap mid-sentence pads it with junk.
 function words(max: number) {
-  return { type: "string", pattern: `^\\S+(\\s+\\S+){0,${max - 1}}$` };
+  return { type: "string", pattern: `^\\S+(\\s+\\S+){0,${Math.ceil(max * 1.5) - 1}}$` };
+}
+
+/// Trims stray padding (e.g. "develop||||") a model can leave at the end of a field.
+function tidy(value: unknown): unknown {
+  if (typeof value === "string") return value.replace(/[|\s]+$/u, "").trim();
+  if (Array.isArray(value)) return value.map(tidy);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, tidy(inner)]));
+  }
+  return value;
 }
 
 function schema(includeMemory: boolean) {
@@ -186,3 +202,68 @@ Example reasons, for tone:
 - ownership 3: "The Broadway example was yours; the rest followed the Wikipedia outline."
 Example coachNote, for a speaker who said "ugh I'm so bad at this": "You called yourself bad at this right after your clearest sentence today. The stumbles were at the start; the middle landed."
 Example nextTimeTip: "Start with one sentence a 12-year-old would get, then add detail."`;
+
+// MARK: - Calibration
+
+/// The calibration talk: 60 seconds answering an easy personal question, before any topic.
+function describeCalibration(body: FeedbackRequest): string {
+  const round = (n: number) => Math.round(n * 10) / 10;
+  const m = body.metrics;
+  const minutes = m.secondsUsed / 60;
+  return [
+    `Question: ${body.topic.title}`,
+    `Delivery: ${round(m.secondsUsed)}s of 60s used, ${m.wordCount} words, ${Math.round(m.wordsPerMinute)} wpm, ` +
+      `${m.fillerCount} fillers (${minutes > 0 ? round(m.fillerCount / minutes) : 0} per minute), longest pause ${round(m.longestPause)}s.`,
+    `What they told us during sign-up: ${JSON.stringify((body.memory as any)?.onboarding ?? {})}`,
+    "",
+    "Transcript:",
+    `"""${body.transcript}"""`,
+  ].join("\n");
+}
+
+const calibrationSchema = {
+  type: "object",
+  properties: {
+    type: { type: "string", enum: ["storyteller", "sprinter", "professor", "minimalist", "improviser", "diplomat"] },
+    summary: words(35),
+    strengths: { type: "array", minItems: 1, maxItems: 2, items: words(10) },
+    workOn: {
+      type: "array",
+      minItems: 1,
+      maxItems: 3,
+      items: {
+        type: "object",
+        properties: { label: words(4), evidence: words(15) },
+        required: ["label", "evidence"],
+        additionalProperties: false,
+      },
+    },
+    firstTip: words(25),
+  },
+  required: ["type", "summary", "strengths", "workOn", "firstTip"],
+  additionalProperties: false,
+};
+
+const calibrationInstructions = `You are the coach inside Yapso, a daily speaking-practice app. This is the user's first talk: a 60-second calibration where they answered an easy personal question with no preparation. You receive the transcript, delivery metrics, and what they said about themselves during sign-up. Build their speaking profile: the baseline the coach will work from.
+
+The transcript comes from automatic speech recognition. Odd words that sound like the right word are probably mishearings: ignore them.
+
+type: the one speaker type this talk shows most clearly.
+- storyteller: vivid details, scenes and anecdotes; may wander before landing a point.
+- sprinter: fast pace (roughly 165+ wpm) or rushing through ideas; energetic.
+- professor: thorough, organised, lots of detail and qualification; can get dense.
+- minimalist: short, clear, sparse; finished early or said little; may under-explain.
+- improviser: thinks out loud, many fillers, restarts and self-corrections; finds it as they go.
+- diplomat: careful and measured, hedges ("kind of", "I guess", "maybe"), softens statements.
+Use the metrics as evidence alongside the words.
+
+summary: two sentences, at most 35 words, about how they came across in this talk, specific to what they said ("Your Saturday had a clear arc from the farmers market to the movie..."). Warm, observant, not flattering.
+
+strengths: 1-2 things they genuinely did well here, at most 10 words each.
+
+workOn: 1-3 focus areas for the coming weeks, most important first: label at most 4 words, evidence at most 15 words pointing at this talk. Let their sign-up struggles inform the choice when the talk supports it. These become what the coach tracks.
+
+firstTip: one concrete thing to try in their first real topic tomorrow, at most 25 words.
+
+Voice: warm but direct, like a good coach meeting someone for the first time. No "Great job", no exclamation marks, no emojis, no em dashes. Speak to them as "you". If they said very little, be kind and still give a useful profile.`;
+

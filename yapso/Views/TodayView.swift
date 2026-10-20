@@ -14,6 +14,8 @@ struct TodayView: View {
     @State private var abandonedIDs: Set<UUID> = []
     /// The practice result the user has closed, so Today shows the daily result again.
     @AppStorage("dismissedPracticeID") private var dismissedPracticeID = ""
+    /// The calibration whose result the user has moved on from.
+    @AppStorage("seenCalibrationID") private var seenCalibrationID = ""
 
     var body: some View {
         let now = Date.now
@@ -24,6 +26,15 @@ struct TodayView: View {
                     .transition(.opacity)
                     // A talk in progress owns the screen.
                     .toolbarVisibility(.hidden, for: .tabBar)
+            } else if let calibration = unseenCalibration {
+                CalibrationResultView(attempt: calibration, history: attempts) {
+                    seenCalibrationID = calibration.id.uuidString
+                }
+                .id(calibration.id)
+                .transition(.opacity)
+            } else if Calibration.isNeeded(attempts: attempts) {
+                CalibrationIntroView { prompt in Task { await startCalibration(prompt) } }
+                    .transition(.opacity)
             } else if let done = todaysResult(now: now) {
                 ResultsView(attempt: done, history: attempts, streak: streak(now: now)) {
                     resultsFooter(for: done)
@@ -51,6 +62,7 @@ struct TodayView: View {
         .background(Color.paper.ignoresSafeArea())
         .animation(.smooth(duration: 0.5), value: activeAttempt(now: now)?.id)
         .animation(.smooth(duration: 0.5), value: todaysResult(now: now)?.id)
+        .animation(.smooth(duration: 0.5), value: unseenCalibration?.id)
         .task { Practice.dropAbandoned(attempts: attempts, in: context) }
         // Reschedules the week's reminders, skipping today once it's spun.
         .task(id: Attempt.dailyStarted(on: DayKey(now), in: attempts)) { await refreshReminder() }
@@ -111,6 +123,16 @@ struct TodayView: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+
+    /// The latest finished calibration, until the user moves on from its result.
+    private var unseenCalibration: Attempt? {
+        attempts.first { $0.kind == .calibration && $0.endedAt != nil }
+            .flatMap { $0.id.uuidString == seenCalibrationID ? nil : $0 }
+    }
+
+    private func startCalibration(_ prompt: String) async {
+        if await Calibration.start(prompt: prompt, in: context) == nil { micDenied = true }
     }
 
     private func startPractice() async {

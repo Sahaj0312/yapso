@@ -130,7 +130,7 @@ final class SessionController {
     private func startRecording() async {
         let fileName = "\(attempt.id.uuidString).caf"
         do {
-            try await recorder.start(url: Recordings.url(for: fileName), maxDuration: SessionTimeline.speakingCap)
+            try await recorder.start(url: Recordings.url(for: fileName), maxDuration: attempt.timeline.speakingCap)
         } catch {
             errorMessage = error.localizedDescription
             tick()
@@ -141,13 +141,13 @@ final class SessionController {
         attempt.speakingStartedAt = startedAt
         save()
         ResearchNotifications.cancel(attemptID: attempt.id)
-        stage = .speaking(cap: startedAt.addingTimeInterval(SessionTimeline.speakingCap))
+        stage = .speaking(cap: startedAt.addingTimeInterval(attempt.timeline.speakingCap))
     }
 
     private func finish(at end: Date) {
         guard attempt.endedAt == nil, let startedAt = attempt.speakingStartedAt else { return }
         attempt.endedAt = end
-        attempt.secondsUsed = max(0, min(end.timeIntervalSince(startedAt), SessionTimeline.speakingCap))
+        attempt.secondsUsed = max(0, min(end.timeIntervalSince(startedAt), attempt.timeline.speakingCap))
         save()
         stage = .finished
     }

@@ -51,6 +51,27 @@ nonisolated enum FeedbackClient {
     }
 
     static func request(_ body: Request) async throws -> (feedback: ContentFeedback, memory: CoachMemory?) {
+        let data = try await post(body)
+        guard let reply = try? JSONDecoder().decode(Response.self, from: data) else { throw APIError.badResponse }
+        return (feedback(from: reply), reply.memory.map { CoachMemory(weaknesses: $0.weaknesses, strengths: $0.strengths, recentTips: $0.recentTips) })
+    }
+
+    /// The calibration talk's reply: the speaker type and starting focus areas. Baselines are filled in by the caller.
+    struct CalibrationReply: Decodable, Sendable {
+        var type: SpeakerType
+        var summary: String
+        var strengths: [String]
+        var workOn: [FocusArea]
+        var firstTip: String
+    }
+
+    static func calibrate(_ body: Request) async throws -> CalibrationReply {
+        let data = try await post(body)
+        guard let reply = try? JSONDecoder().decode(CalibrationReply.self, from: data) else { throw APIError.badResponse }
+        return reply
+    }
+
+    private static func post(_ body: Request) async throws -> Data {
         var request = URLRequest(url: AppConfig.apiBaseURL.appending(path: "feedback"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -67,8 +88,7 @@ nonisolated enum FeedbackClient {
         }
         guard let http = response as? HTTPURLResponse else { throw APIError.badResponse }
         try APIError.check(http)
-        guard let reply = try? JSONDecoder().decode(Response.self, from: data) else { throw APIError.badResponse }
-        return (feedback(from: reply), reply.memory.map { CoachMemory(weaknesses: $0.weaknesses, strengths: $0.strengths, recentTips: $0.recentTips) })
+        return data
     }
 
     private static func feedback(from reply: Response) -> ContentFeedback {

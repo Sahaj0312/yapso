@@ -20,6 +20,8 @@ struct CountdownView: View {
 struct SpeakingView: View {
     let topicTitle: String
     let remaining: TimeInterval
+    /// The talk's full length (90s, or 60s for calibration), for the ring.
+    var total: TimeInterval = SessionTimeline.topicSpeakingCap
     let levels: [Float]
     let onDone: () -> Void
 
@@ -40,7 +42,7 @@ struct SpeakingView: View {
             ZStack {
                 Circle().stroke(Color.primary.opacity(0.08), lineWidth: 3)
                 Circle()
-                    .trim(from: 0, to: remaining / SessionTimeline.speakingCap)
+                    .trim(from: 0, to: remaining / total)
                     .stroke(Color.ember, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .animation(.linear(duration: 0.1), value: remaining)

@@ -24,6 +24,12 @@ Yapso trains two things at once: **articulating clearly under time pressure**, a
 - If a revealed daily attempt never reaches the speaking phase, it is forfeited (no streak credit) once the calendar day its research window ended in has passed. (A 23:55 reveal can still be spoken just after midnight.)
 - Mic permission is requested **before** the topic can be revealed, so nobody burns a day on a permission prompt. Notification permission is requested at the same moment (first spin) so the research nudges work. No speech-recognition permission is needed (Deepgram, and the on-device fallback, run without it).
 
+### Calibration (first run)
+- After onboarding, Today shows a **calibration** before the first spin: 60 seconds on an easy, zero-prep personal question, no research, 3‑2‑1 then record. Default: "Walk me through your perfect Saturday, from the moment you wake up." ("Different question" cycles to "Teach me how to make something you're good at making" and "Tell me about a place you love").
+- Transcribed by Deepgram (needs a connection, like daily talks), then the Worker returns a **speaking profile**: one of six speaker types (Storyteller, Sprinter, Professor, Minimalist, Improviser, Diplomat; names and blurbs fixed in the app), a two-sentence summary, 1–2 strengths, 1–3 focus areas, and a tip for the first topic. Baselines (pace, fillers per minute, longest pause) come from the on-device metrics.
+- The profile seeds the coach memory (focus areas, strengths, first tip) and is kept across daily memory updates. Shown on Today until "Spin your first topic", in History ("Your first talk"), and on Progress ("You started as…").
+- Free for everyone, never the free tier's one AI feedback, never part of the streak or trends. An empty calibration asks for another go.
+
 ## 2. Topics
 
 - **Concrete, niche, explainable concepts** — not philosophical/opinion prompts. Examples: "The Lindy Effect", "How submarines control depth", "Tardigrades", "The Byzantine Generals Problem", "Why Venice is sinking".

@@ -34,7 +34,7 @@ enum AttemptProcessor {
         }
 
         async let levels = Task.detached { [url] in try AudioLevels.frameLevels(fileURL: url) }.value
-        let (text, words, source) = try await transcribe(url, kind: attempt.kind, keyterms: [attempt.topicTitle])
+        let (text, words, source) = try await transcribe(url, kind: attempt.kind, keyterms: attempt.kind == .calibration ? [] : [attempt.topicTitle])
         let pauses = DeliveryAnalyzer.pauses(frameLevels: try await levels, frameDuration: AudioLevels.frameDuration)
         apply(TranscriptTimeline(text: text, words: words, pauses: pauses), source: source, to: attempt)
     }
@@ -54,12 +54,15 @@ enum AttemptProcessor {
     /// Requests the coach's content feedback once a talk with words is transcribed. Daily talks also replace the
     /// coach's memory. Free users get one real feedback; later ones are marked locked.
     static func requestFeedbackIfNeeded(_ attempt: Attempt, history: [Attempt]) async throws {
-        let requestable: Set<FeedbackStatus> = AppConfig.hasPro ? [.notRequested, .pending, .failed, .locked] : [.notRequested, .pending, .failed]
+        // The calibration is free for everyone and never counts as the free tier's one feedback.
+        let requestable: Set<FeedbackStatus> = AppConfig.hasPro || attempt.kind == .calibration
+            ? [.notRequested, .pending, .failed, .locked] : [.notRequested, .pending, .failed]
         guard attempt.isTranscribed, requestable.contains(attempt.feedbackStatus), !feedbackInFlight.contains(attempt.id),
               let timeline = attempt.transcriptTimeline, !timeline.words.isEmpty,
               let context = attempt.modelContext else { return }
 
-        if !AppConfig.hasPro && history.contains(where: { $0.id != attempt.id && $0.feedbackStatus == .complete }) {
+        if !AppConfig.hasPro, attempt.kind != .calibration,
+           history.contains(where: { $0.id != attempt.id && $0.kind != .calibration && $0.feedbackStatus == .complete }) {
             attempt.feedbackStatus = .locked
             try? context.save()
             return
@@ -98,6 +101,11 @@ enum AttemptProcessor {
             previous: previous
         )
 
+        if attempt.kind == .calibration {
+            try await calibrate(attempt, request: request, profile: profile, context: context)
+            return
+        }
+
         do {
             let (feedback, memory) = try await FeedbackClient.request(request)
             attempt.contentFeedback = feedback
@@ -105,12 +113,48 @@ enum AttemptProcessor {
             // Only daily talks shape what the coach remembers; practice reads it but never writes.
             if attempt.kind == .daily, var memory {
                 memory.onboarding = profile?.memory.onboarding
+                memory.profile = profile?.memory.profile
                 if let profile {
                     profile.memory = memory
                     profile.updatedAt = .now
                 } else {
                     context.insert(CoachProfile(memory: memory))
                 }
+            }
+            try? context.save()
+        } catch {
+            attempt.feedbackStatus = .failed
+            try? context.save()
+            throw error
+        }
+    }
+
+    /// Turns the calibration talk into a speaking profile, which also seeds what the coach tracks.
+    private static func calibrate(_ attempt: Attempt, request: FeedbackClient.Request, profile: CoachProfile?,
+                                  context: ModelContext) async throws {
+        do {
+            let reply = try await FeedbackClient.calibrate(request)
+            let minutes = attempt.secondsUsed / 60
+            let speaking = SpeakingProfile(
+                type: reply.type, summary: reply.summary, strengths: reply.strengths, workOn: reply.workOn,
+                firstTip: reply.firstTip,
+                baselineWordsPerMinute: attempt.wordsPerMinute,
+                baselineFillersPerMinute: minutes > 0 ? Double(attempt.fillerCount) / minutes : 0,
+                baselineLongestPause: attempt.longestPauseSeconds
+            )
+            attempt.speakingProfile = speaking
+            attempt.feedbackStatus = .complete
+
+            var memory = profile?.memory ?? CoachMemory()
+            memory.profile = speaking
+            memory.weaknesses = reply.workOn
+            memory.strengths = reply.strengths
+            memory.recentTips = [reply.firstTip]
+            if let profile {
+                profile.memory = memory
+                profile.updatedAt = .now
+            } else {
+                context.insert(CoachProfile(memory: memory))
             }
             try? context.save()
         } catch {

@@ -205,6 +205,23 @@ private struct FocusAreas: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            if let profile = memory.profile {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("You started as")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(profile.type.name)
+                        .font(.system(.title, design: .serif).weight(.semibold))
+                        .foregroundStyle(Color.ember)
+                    Text(profile.type.tagline)
+                        .font(.subheadline)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(18)
+                .background(Color.ember.opacity(0.08), in: .rect(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.ember.opacity(0.25)))
+                .padding(.bottom, 8)
+            }
             Eyebrow("Your focus areas")
             if memory.weaknesses.isEmpty && memory.strengths.isEmpty {
                 Text("After a few talks, your coach will note what to work on here.")

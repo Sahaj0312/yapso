@@ -2,6 +2,8 @@ import Foundation
 
 nonisolated enum AttemptKind: String, Codable, Sendable {
     case daily, practice
+    /// The one-time 60-second talk about the user that builds their speaking profile. No topic, no research.
+    case calibration
 }
 
 nonisolated enum SessionPhase: Equatable, Sendable {
@@ -22,7 +24,8 @@ nonisolated enum SessionPhase: Equatable, Sendable {
 /// so the state survives the app being killed or backgrounded.
 nonisolated struct SessionTimeline: Sendable {
     static let defaultResearchDuration: TimeInterval = 10 * 60
-    static let speakingCap: TimeInterval = 90
+    static let topicSpeakingCap: TimeInterval = 90
+    static let calibrationSpeakingCap: TimeInterval = 60
 
     var kind: AttemptKind
     /// When the rolodex lands and the research clock starts.
@@ -33,9 +36,11 @@ nonisolated struct SessionTimeline: Sendable {
 
     var researchDeadline: Date { revealedAt.addingTimeInterval(researchDuration) }
 
+    var speakingCap: TimeInterval { kind == .calibration ? Self.calibrationSpeakingCap : Self.topicSpeakingCap }
+
     func phase(now: Date, calendar: Calendar = .current) -> SessionPhase {
         if endedAt != nil { return .finished }
-        if let speakingStartedAt { return .speaking(cap: speakingStartedAt.addingTimeInterval(Self.speakingCap)) }
+        if let speakingStartedAt { return .speaking(cap: speakingStartedAt.addingTimeInterval(speakingCap)) }
         if now < revealedAt { return .revealing(landsAt: revealedAt) }
         if now < researchDeadline { return .researching(deadline: researchDeadline) }
         // A late-night reveal still counts: only forfeit once the day the research ended in is over.

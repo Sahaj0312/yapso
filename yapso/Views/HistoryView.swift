@@ -47,7 +47,9 @@ struct HistoryView: View {
             .navigationDestination(for: UUID.self) { id in
                 if let attempt = attempts.first(where: { $0.id == id }) {
                     ResultsView(attempt: attempt, history: attempts, streak: nil) {
-                        RedoButton(attempt: attempt, attempts: attempts)
+                        if attempt.kind != .calibration {
+                            RedoButton(attempt: attempt, attempts: attempts)
+                        }
                     }
                     .navigationBarTitleDisplayMode(.inline)
                 }

@@ -36,6 +36,8 @@ final class Attempt {
 
     var feedbackStatusRaw: String = FeedbackStatus.notRequested.rawValue
     var feedbackData: Data?
+    /// Calibration only: the speaking profile it produced (instead of `feedbackData`).
+    var speakingProfileData: Data?
 
     /// For practice redos of a past topic: the attempt being redone.
     var redoOfAttemptID: UUID?
@@ -71,6 +73,11 @@ final class Attempt {
         set { feedbackData = newValue.flatMap { try? JSONEncoder().encode($0) } }
     }
 
+    var speakingProfile: SpeakingProfile? {
+        get { speakingProfileData.flatMap { try? JSONDecoder().decode(SpeakingProfile.self, from: $0) } }
+        set { speakingProfileData = newValue.flatMap { try? JSONEncoder().encode($0) } }
+    }
+
     var transcriptTimeline: TranscriptTimeline? {
         get { transcriptTimelineData.flatMap { try? JSONDecoder().decode(TranscriptTimeline.self, from: $0) } }
         set { transcriptTimelineData = newValue.flatMap { try? JSONEncoder().encode($0) } }
@@ -78,7 +85,7 @@ final class Attempt {
 
     var timeline: SessionTimeline {
         SessionTimeline(kind: kind, revealedAt: revealedAt, speakingStartedAt: speakingStartedAt, endedAt: endedAt,
-                        researchDuration: AppConfig.researchDuration)
+                        researchDuration: kind == .calibration ? 0 : AppConfig.researchDuration)
     }
 }
 

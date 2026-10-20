@@ -57,4 +57,57 @@ nonisolated struct CoachMemory: Codable, Hashable, Sendable {
     var strengths: [String] = []
     var recentTips: [String] = []
     var onboarding: OnboardingAnswers?
+    /// From the calibration talk. Kept by the app across daily memory replacements.
+    var profile: SpeakingProfile?
+}
+
+/// The kind of speaker the calibration talk showed. A fixed set, so the name and blurb are always consistent.
+nonisolated enum SpeakerType: String, Codable, CaseIterable, Sendable {
+    case storyteller, sprinter, professor, minimalist, improviser, diplomat
+
+    var name: String {
+        switch self {
+        case .storyteller: "The Storyteller"
+        case .sprinter: "The Sprinter"
+        case .professor: "The Professor"
+        case .minimalist: "The Minimalist"
+        case .improviser: "The Improviser"
+        case .diplomat: "The Diplomat"
+        }
+    }
+
+    var tagline: String {
+        switch self {
+        case .storyteller: "You paint pictures and pull people in."
+        case .sprinter: "Quick, energetic and full of ideas."
+        case .professor: "Thorough and organised. You cover the ground."
+        case .minimalist: "Clear and to the point. No wasted words."
+        case .improviser: "You think out loud and find it as you go."
+        case .diplomat: "Careful, measured and considerate."
+        }
+    }
+
+    var watchOut: String {
+        switch self {
+        case .storyteller: "Stories can wander before the point lands."
+        case .sprinter: "Listeners need a beat to catch up."
+        case .professor: "Detail can bury the main idea."
+        case .minimalist: "Sometimes too brief to bring people with you."
+        case .improviser: "Fillers and restarts creep in while you search."
+        case .diplomat: "Hedging can undersell what you know."
+        }
+    }
+}
+
+/// The result of the calibration talk: who you are as a speaker today, and your starting numbers.
+nonisolated struct SpeakingProfile: Codable, Hashable, Sendable {
+    var type: SpeakerType
+    /// Two personal sentences about this talk.
+    var summary: String
+    var strengths: [String]
+    var workOn: [FocusArea]
+    var firstTip: String
+    var baselineWordsPerMinute: Double
+    var baselineFillersPerMinute: Double
+    var baselineLongestPause: Double
 }

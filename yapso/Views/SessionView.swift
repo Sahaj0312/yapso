@@ -50,6 +50,7 @@ struct SessionView: View {
                 SpeakingView(
                     topicTitle: attempt.topicTitle,
                     remaining: cap.timeIntervalSince(controller.now),
+                    total: attempt.timeline.speakingCap,
                     levels: controller.recorder.levels,
                     onDone: controller.stopSpeaking
                 )
