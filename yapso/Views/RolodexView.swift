@@ -7,6 +7,8 @@ struct RolodexView: View {
     let landsAt: Date
     let domain: String
     @State private var titles: [String]
+    /// Where the result sits in `titles`: a few rows from the end, so it lands centered with titles below it too.
+    private let resultIndex: Int
     @AppStorage(Preferences.spinSound) private var spinSound = false
 
     private let rowHeight: CGFloat = 52
@@ -17,14 +19,16 @@ struct RolodexView: View {
     init(target: String, domain: String, landsAt: Date, pool: [Topic]) {
         self.landsAt = landsAt
         self.domain = domain
-        let filler = pool.map(\.title).filter { $0 != target }.shuffled().prefix(26)
-        _titles = State(initialValue: Array(filler) + [target])
+        let filler = Array(pool.map(\.title).filter { $0 != target }.shuffled().prefix(29))
+        let before = filler.prefix(26), after = filler.dropFirst(26)
+        resultIndex = before.count
+        _titles = State(initialValue: Array(before) + [target] + Array(after))
     }
 
     var body: some View {
         TimelineView(.animation) { context in
             let progress = spinProgress(at: context.date)
-            let position = progress * Double(titles.count - 1)
+            let position = progress * Double(resultIndex)
             let landed = progress >= 1
 
             VStack(spacing: 28) {
@@ -36,7 +40,7 @@ struct RolodexView: View {
                     ForEach(titles.indices, id: \.self) { index in
                         let distance = Double(index) - position
                         if abs(distance) < Double(visibleRows) / 2 + 1 {
-                            row(titles[index], distance: distance, isResult: landed && index == titles.count - 1)
+                            row(titles[index], distance: distance, isResult: landed && index == resultIndex)
                         }
                     }
                 }
