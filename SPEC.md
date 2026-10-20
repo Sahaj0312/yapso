@@ -93,7 +93,7 @@ Rules:
 4. Mic permission with a short rationale.
 5. Soft paywall (dismissible) → Home.
 
-No speaking during onboarding. No account. Notification permission is requested at the first spin; the daily reminder (default 18:00, only if today's yap isn't done) reuses it.
+No speaking during onboarding. No account. Notification permission is requested at the first spin; the daily reminder (default 18:00, only on days not yet spun; one-off reminders scheduled a week ahead and refreshed on open) reuses it. Turning the reminder on in Settings also asks, if never asked.
 
 ## 9. App structure
 

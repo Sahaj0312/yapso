@@ -24,7 +24,7 @@ struct ResultsView: View {
             VStack(alignment: .leading, spacing: 32) {
                 VStack(alignment: .leading, spacing: 10) {
                     if let streak {
-                        StreakLabel(streak: streak)
+                        TodayHeader(streak: streak)
                             .padding(.bottom, 24)
                     }
                     Eyebrow(attempt.topicDomain)

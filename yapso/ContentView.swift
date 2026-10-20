@@ -14,6 +14,8 @@ nonisolated enum AppTab: String, Hashable {
 
 struct ContentView: View {
     @State private var tab = AppConfig.initialTab
+    @AppStorage(Preferences.hasOnboarded) private var hasOnboarded = false
+    @State private var showOnboarding = false
 
     var body: some View {
         TabView(selection: $tab) {
@@ -22,8 +24,14 @@ struct ContentView: View {
             Tab("Progress", systemImage: "chart.line.uptrend.xyaxis", value: AppTab.progress) { ProgressScreen() }
         }
         .sensoryFeedback(.selection, trigger: tab)
-        // Ink, not system blue, for the selected tab and inline buttons.
-        .tint(.primary)
+        .onAppear { showOnboarding = !hasOnboarded || AppConfig.forceOnboarding }
+        .onChange(of: hasOnboarded) { _, done in if !done { showOnboarding = true } }
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingView {
+                hasOnboarded = true
+                showOnboarding = false
+            }
+        }
     }
 }
 

@@ -91,4 +91,9 @@ extension Attempt {
             .compactMap { attempt in attempt.day.map { (day: $0, value: value(attempt)) } }
         return DeliveryAnalyzer.baseline(samples, before: day)
     }
+
+    /// Whether the day's daily topic has been revealed, which is what silences that day's reminder.
+    static func dailyStarted(on day: DayKey, in attempts: [Attempt]) -> Bool {
+        attempts.contains { $0.kind == .daily && $0.dayKey == day.rawValue }
+    }
 }

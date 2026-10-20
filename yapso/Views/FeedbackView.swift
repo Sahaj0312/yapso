@@ -188,6 +188,8 @@ private struct LoadingFeedback: View {
 
 /// Free users past their one feedback: the same sample for everyone, blurred, behind the Pro pitch.
 private struct LockedFeedback: View {
+    @State private var showPaywall = false
+
     var body: some View {
         FeedbackBody(feedback: .sample, animated: false)
             .blur(radius: 7)
@@ -202,8 +204,7 @@ private struct LockedFeedback: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                    // TODO: open the paywall (build step 7).
-                    Button("Unlock Pro") {}
+                    Button("Unlock Pro") { showPaywall = true }
                         .buttonStyle(PrimaryButtonStyle())
                 }
                 .padding(24)
@@ -212,6 +213,7 @@ private struct LockedFeedback: View {
                 .shadow(color: .black.opacity(0.12), radius: 24, y: 8)
                 .padding(.horizontal, 8)
             }
+            .sheet(isPresented: $showPaywall) { PaywallView(context: .feedbackUsed) }
     }
 }
 

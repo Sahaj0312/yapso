@@ -81,5 +81,14 @@ nonisolated enum AppConfig {
         #endif
     }
 
+    /// Launch with `-yapsoOnboarding` (Debug only) to show onboarding even after it's been completed.
+    static var forceOnboarding: Bool {
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("-yapsoOnboarding")
+        #else
+        return false
+        #endif
+    }
+
     static let spinDuration: TimeInterval = 3.2
 }

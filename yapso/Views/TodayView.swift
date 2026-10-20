@@ -8,6 +8,7 @@ enum TopicStore {
 struct TodayView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Attempt.revealedAt, order: .reverse) private var attempts: [Attempt]
+    @Environment(\.scenePhase) private var scenePhase
     @State private var micDenied = false
 
     var body: some View {
@@ -35,6 +36,11 @@ struct TodayView: View {
             }
         }
         .animation(.smooth(duration: 0.5), value: activeAttempt(now: now)?.id)
+        // Reschedules the week's reminders, skipping today once it's spun.
+        .task(id: Attempt.dailyStarted(on: DayKey(now), in: attempts)) { await refreshReminder() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await refreshReminder() } }
+        }
         .alert("Yapso needs your microphone", isPresented: $micDenied) {
             Button("Open Settings") {
                 if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
@@ -52,6 +58,10 @@ struct TodayView: View {
             default: true
             }
         }
+    }
+
+    private func refreshReminder() async {
+        await DailyReminder.refresh(todayStarted: Attempt.dailyStarted(on: DayKey(.now), in: attempts))
     }
 
     private func todaysDailyAttempt(now: Date) -> Attempt? {
@@ -109,7 +119,7 @@ private struct ReadyView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            StreakLabel(streak: streak)
+            TodayHeader(streak: streak)
             Spacer()
             Eyebrow("Today")
                 .padding(.bottom, 10)
@@ -124,6 +134,30 @@ private struct ReadyView: View {
                 .buttonStyle(PrimaryButtonStyle())
         }
         .padding(24)
+    }
+}
+
+/// The streak with the Settings gear beside it, at the top of Today.
+struct TodayHeader: View {
+    let streak: Int
+    @State private var showSettings = false
+
+    var body: some View {
+        HStack {
+            StreakLabel(streak: streak)
+            Spacer()
+            Button {
+                showSettings = true
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 36, height: 36)
+                    .contentShape(.rect)
+            }
+            .accessibilityLabel("Settings")
+        }
+        .sheet(isPresented: $showSettings) { SettingsView() }
     }
 }
 

@@ -1,3 +1,4 @@
+import AudioToolbox
 import SwiftUI
 
 /// The daily reveal: a typographic reel of real topic names that decelerates and settles on today's topic.
@@ -6,6 +7,7 @@ struct RolodexView: View {
     let landsAt: Date
     let domain: String
     @State private var titles: [String]
+    @AppStorage(Preferences.spinSound) private var spinSound = false
 
     private let rowHeight: CGFloat = 52
     private let visibleRows = 5
@@ -51,6 +53,10 @@ struct RolodexView: View {
                 )
             }
             .sensoryFeedback(.selection, trigger: Int(position.rounded()))
+            .onChange(of: Int(position.rounded())) {
+                // The keyboard click: quiet, and silenced by the ringer switch.
+                if spinSound { AudioServicesPlaySystemSound(1104) }
+            }
             .sensoryFeedback(.impact(weight: .heavy, intensity: 0.9), trigger: landed) { _, new in new }
         }
         .padding(.horizontal, 24)

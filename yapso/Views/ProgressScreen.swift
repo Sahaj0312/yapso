@@ -231,6 +231,8 @@ private struct FocusAreas: View {
 }
 
 private struct ProLock: View {
+    @State private var showPaywall = false
+
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "lock.fill").font(.title2)
@@ -239,8 +241,7 @@ private struct ProLock: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            // TODO: open the paywall (build step 7).
-            Button("Unlock Pro") {}
+            Button("Unlock Pro") { showPaywall = true }
                 .buttonStyle(PrimaryButtonStyle())
         }
         .padding(24)
@@ -248,5 +249,6 @@ private struct ProLock: View {
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
         .shadow(color: .black.opacity(0.12), radius: 24, y: 8)
         .padding(.horizontal, 24)
+        .sheet(isPresented: $showPaywall) { PaywallView(context: .upgrade) }
     }
 }
