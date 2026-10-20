@@ -6,7 +6,8 @@
   "observability": { "enabled": true },
   "vars": {
     // Swap models here without an app update.
-    "OPENAI_MODEL": "gpt-5-mini",
+    "OPENAI_MODEL": "gpt-5.4-mini",
+    "OPENAI_REASONING": "medium",
     "DEEPGRAM_MODEL": "nova-3",
     // Per device per UTC day.
     "DEVICE_DAILY_TRANSCRIBE": "15",
