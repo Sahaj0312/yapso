@@ -207,7 +207,9 @@ private struct LockedFeedback: View {
                         .buttonStyle(PrimaryButtonStyle())
                 }
                 .padding(24)
-                .background(.regularMaterial, in: .rect(cornerRadius: 20))
+                // Solid, not material: material makes the button's ink vibrant (washed-out grey).
+                .background(Color(uiColor: .secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
+                .shadow(color: .black.opacity(0.12), radius: 24, y: 8)
                 .padding(.horizontal, 8)
             }
     }

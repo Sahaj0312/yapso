@@ -17,6 +17,8 @@ struct TodayView: View {
                 SessionView(attempt: active)
                     .id(active.id)
                     .transition(.opacity)
+                    // A talk in progress owns the screen.
+                    .toolbarVisibility(.hidden, for: .tabBar)
             } else if let done = todaysDailyAttempt(now: now) {
                 ResultsView(attempt: done, history: attempts, streak: streak(now: now))
                     .transition(.opacity)

@@ -1,13 +1,15 @@
 import SwiftUI
 
 /// A finished attempt: delivery metrics first, then the transcript, then the coach's feedback.
+/// Shown on Today (with the streak) and from History (without).
 struct ResultsView: View {
     let attempt: Attempt
     /// All attempts, for 7-day baselines.
     let history: [Attempt]
-    let streak: Int
+    /// Today's streak; nil when opened from History.
+    let streak: Int?
 
-    init(attempt: Attempt, history: [Attempt], streak: Int) {
+    init(attempt: Attempt, history: [Attempt], streak: Int?) {
         self.attempt = attempt
         self.history = history
         self.streak = streak
@@ -21,19 +23,28 @@ struct ResultsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
                 VStack(alignment: .leading, spacing: 10) {
-                    StreakLabel(streak: streak)
-                        .padding(.bottom, 24)
+                    if let streak {
+                        StreakLabel(streak: streak)
+                            .padding(.bottom, 24)
+                    }
                     Eyebrow(attempt.topicDomain)
                     Text(attempt.topicTitle)
                         .font(.largeTitle.weight(.bold))
                         .fixedSize(horizontal: false, vertical: true)
+                    if streak == nil {
+                        Text(subtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 content
 
-                Text("New topic tomorrow.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                if streak != nil {
+                    Text("New topic tomorrow.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(24)
         }
@@ -53,7 +64,7 @@ struct ResultsView: View {
                     OfflineModelNotice(canRetry: connectivity.isOnline) { Task { await retranscribeOnline() } }
                 }
                 MetricGrid(attempt: attempt, history: history)
-                TranscriptSection(timeline: timeline)
+                TranscriptSection(timeline: timeline, audioURL: localAudioURL)
                 FeedbackSection(attempt: attempt, error: feedbackError) { Task { await process() } }
             } else {
                 EmptyTalkCard()
@@ -78,9 +89,18 @@ struct ResultsView: View {
         }
     }
 
-    private var hasLocalAudio: Bool {
-        guard let name = attempt.audioFileName else { return false }
-        return FileManager.default.fileExists(atPath: Recordings.url(for: name).path)
+    private var subtitle: String {
+        let date = attempt.revealedAt.formatted(.dateTime.weekday(.wide).month(.wide).day())
+        return attempt.kind == .practice ? "\(date) · Practice" : date
+    }
+
+    private var hasLocalAudio: Bool { localAudioURL != nil }
+
+    /// The recording, if it's on this device (it isn't synced, and it's deleted after 30 days).
+    private var localAudioURL: URL? {
+        guard let name = attempt.audioFileName else { return nil }
+        let url = Recordings.url(for: name)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
     private func process() async {
@@ -192,10 +212,15 @@ private struct CountingText: View, Animatable {
 
 private struct TranscriptSection: View {
     let timeline: TranscriptTimeline
+    let audioURL: URL?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Eyebrow("Transcript")
+            if let audioURL {
+                AudioPlayerBar(url: audioURL)
+                    .padding(.bottom, 4)
+            }
             Text(attributed)
                 .font(.body)
                 .lineSpacing(5)
@@ -282,6 +307,52 @@ private struct OfflineModelNotice: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background(Color.primary.opacity(0.04), in: .rect(cornerRadius: 12))
+    }
+}
+
+/// Play/pause plus a draggable progress bar for listening back.
+private struct AudioPlayerBar: View {
+    let url: URL
+    @State private var playback = AudioPlayback()
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Button {
+                playback.toggle()
+            } label: {
+                Image(systemName: playback.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.body)
+                    .contentTransition(.symbolEffect(.replace))
+                    .frame(width: 40, height: 40)
+                    .foregroundStyle(Color(uiColor: .systemBackground))
+                    .background(Color.primary, in: .circle)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(playback.isPlaying ? "Pause" : "Play recording")
+            .sensoryFeedback(.selection, trigger: playback.isPlaying)
+
+            GeometryReader { proxy in
+                let fraction = playback.duration > 0 ? playback.currentTime / playback.duration : 0
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.primary.opacity(0.1))
+                    Capsule().fill(Color.primary).frame(width: proxy.size.width * fraction)
+                }
+                .frame(height: 4)
+                .frame(maxHeight: .infinity)
+                .contentShape(.rect)
+                .gesture(DragGesture(minimumDistance: 0).onChanged { value in
+                    playback.seek(to: value.location.x / proxy.size.width)
+                })
+            }
+            .frame(height: 40)
+
+            Text((playback.isPlaying || playback.currentTime > 0 ? playback.currentTime : playback.duration).clockString)
+                .font(.footnote.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(minWidth: 34, alignment: .trailing)
+        }
+        .onAppear { playback.load(url) }
+        .onDisappear { playback.stop() }
     }
 }
 

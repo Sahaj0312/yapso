@@ -28,7 +28,7 @@ nonisolated enum AppConfig {
         #endif
     }
 
-    /// Launch with `-yapsoResetData` (Debug only) to delete all attempts on launch, for retesting the daily flow.
+    /// Launch with `-yapsoResetData` (Debug only) to delete all attempts and the coach profile on launch, for retesting the daily flow.
     static var resetData: Bool {
         #if DEBUG
         return ProcessInfo.processInfo.arguments.contains("-yapsoResetData")
@@ -70,6 +70,15 @@ nonisolated enum AppConfig {
         let id = UUID().uuidString
         UserDefaults.standard.set(id, forKey: key)
         return id
+    }
+
+    /// Launch with `-yapsoTab history|progress` (Debug only) to open on that tab.
+    static var initialTab: AppTab {
+        #if DEBUG
+        return UserDefaults.standard.string(forKey: "yapsoTab").flatMap(AppTab.init) ?? .today
+        #else
+        return .today
+        #endif
     }
 
     static let spinDuration: TimeInterval = 3.2

@@ -117,4 +117,16 @@ nonisolated enum Recordings {
     static func url(for fileName: String) -> URL {
         directory.appending(path: fileName)
     }
+
+    static let retention: TimeInterval = 30 * 24 * 60 * 60
+
+    /// Deletes recordings older than 30 days. Transcripts, metrics and feedback are kept.
+    static func purgeExpired(now: Date = .now) {
+        let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.creationDateKey])) ?? []
+        for file in files {
+            guard let created = try? file.resourceValues(forKeys: [.creationDateKey]).creationDate,
+                  now.timeIntervalSince(created) > retention else { continue }
+            try? FileManager.default.removeItem(at: file)
+        }
+    }
 }
