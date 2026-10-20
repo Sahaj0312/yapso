@@ -87,6 +87,18 @@ nonisolated enum SpeakerType: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    /// Tarot-style numbering for the card.
+    var numeral: String {
+        switch self {
+        case .storyteller: "I"
+        case .sprinter: "II"
+        case .professor: "III"
+        case .minimalist: "IV"
+        case .improviser: "V"
+        case .diplomat: "VI"
+        }
+    }
+
     var watchOut: String {
         switch self {
         case .storyteller: "Stories can wander before the point lands."
@@ -104,6 +116,8 @@ nonisolated struct SpeakingProfile: Codable, Hashable, Sendable {
     var type: SpeakerType
     /// Two personal sentences about this talk.
     var summary: String
+    /// What the coach noticed, written conversationally in a few short paragraphs. Missing on older profiles.
+    var message: String?
     var strengths: [String]
     var workOn: [FocusArea]
     var firstTip: String

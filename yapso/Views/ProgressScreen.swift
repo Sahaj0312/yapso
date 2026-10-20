@@ -206,18 +206,22 @@ private struct FocusAreas: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if let profile = memory.profile {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("You started as")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Text(profile.type.name)
-                        .font(.system(.title, design: .serif).weight(.semibold))
-                        .foregroundStyle(Color.ember)
-                    Text(profile.type.tagline)
-                        .font(.subheadline)
+                HStack(spacing: 16) {
+                    ProfileCard(type: profile.type, scale: 0.24, glow: false)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("You started as")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Text(profile.type.name)
+                            .font(.system(.title2, design: .serif).weight(.semibold))
+                            .foregroundStyle(Color.ember)
+                        Text(profile.type.tagline)
+                            .font(.subheadline)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(18)
+                .padding(14)
                 .background(Color.ember.opacity(0.08), in: .rect(cornerRadius: 16))
                 .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.ember.opacity(0.25)))
                 .padding(.bottom, 8)

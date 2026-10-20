@@ -63,6 +63,7 @@ nonisolated enum FeedbackClient {
         var strengths: [String]
         var workOn: [FocusArea]
         var firstTip: String
+        var message: String?
     }
 
     static func calibrate(_ body: Request) async throws -> CalibrationReply {

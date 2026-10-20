@@ -99,5 +99,14 @@ nonisolated enum AppConfig {
         #endif
     }
 
+    /// Launch with `-yapsoCalibrationNote` (Debug only) to open the calibration result on the note, not the reveal.
+    static var calibrationNote: Bool {
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("-yapsoCalibrationNote")
+        #else
+        return false
+        #endif
+    }
+
     static let spinDuration: TimeInterval = 3.2
 }

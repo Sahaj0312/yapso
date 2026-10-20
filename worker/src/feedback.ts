@@ -239,8 +239,9 @@ const calibrationSchema = {
       },
     },
     firstTip: words(25),
+    message: words(95),
   },
-  required: ["type", "summary", "strengths", "workOn", "firstTip"],
+  required: ["type", "summary", "strengths", "workOn", "firstTip", "message"],
   additionalProperties: false,
 };
 
@@ -264,6 +265,8 @@ strengths: 1-2 things they genuinely did well here, at most 10 words each.
 workOn: 1-3 focus areas for the coming weeks, most important first: label at most 4 words, evidence at most 15 words pointing at this talk. Let their sign-up struggles inform the choice when the talk supports it. These become what the coach tracks.
 
 firstTip: one concrete thing to try in their first real topic tomorrow, at most 25 words.
+
+message: what you noticed, written to them like a short text from a coach who just listened: conversational, plain words, first person ("I noticed..."), 60-90 words in three short paragraphs separated by a blank line. First: what kind of speaker they are and the specific moment in their answer that showed it. Second: what worked, and what got in the way, concretely. Third: what you'll work on together first, ending with the tip for their first topic. No headings, no lists, no quotes longer than a few words.
 
 Voice: warm but direct, like a good coach meeting someone for the first time. No "Great job", no exclamation marks, no emojis, no em dashes. Speak to them as "you". If they said very little, be kind and still give a useful profile.`;
 

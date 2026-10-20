@@ -69,6 +69,10 @@ struct CalibrationResultView: View {
     let onContinue: () -> Void
 
     @State private var error: Error?
+    /// False while the card is center stage on the dark reveal; true once tapped away to the note.
+    @State private var showingNote = false
+    @State private var entered = false
+    @State private var drag: CGSize = .zero
     private var connectivity = Connectivity.shared
 
     init(attempt: Attempt, history: [Attempt], onContinue: @escaping () -> Void) {
@@ -78,27 +82,90 @@ struct CalibrationResultView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                if let profile = attempt.speakingProfile {
-                    SpeakingProfileView(profile: profile, animated: true)
-                    Button("Spin your first topic", action: onContinue)
-                        .buttonStyle(PrimaryButtonStyle(fill: .ember))
-                } else if attempt.feedbackStatus == .skippedEmpty {
-                    emptyTalk
-                } else if let error {
-                    failure(error)
-                } else {
-                    building
+        Group {
+            if let profile = attempt.speakingProfile {
+                reveal(profile)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 28) {
+                        if attempt.feedbackStatus == .skippedEmpty {
+                            emptyTalk
+                        } else if let error {
+                            failure(error)
+                        } else {
+                            building
+                        }
+                    }
+                    .padding(24)
                 }
+                .scrollIndicators(.hidden)
+                .background(Color.paper.ignoresSafeArea())
             }
-            .padding(24)
         }
-        .scrollIndicators(.hidden)
-        .background(Color.paper.ignoresSafeArea())
         .task(id: attempt.id) { await process() }
         .onChange(of: connectivity.isOnline) { _, online in
             if online, error != nil { Task { await process() } }
+        }
+    }
+
+    /// The card alone on a dark stage, then (on tap) gliding up to the top with the coach's note below it.
+    private func reveal(_ profile: SpeakingProfile) -> some View {
+        GeometryReader { proxy in
+            let bigScale = min(1.15, (proxy.size.width - 72) / ProfileCard.size.width)
+            let scale: CGFloat = showingNote ? 0.48 : bigScale
+            let cardHeight = ProfileCard.size.height * scale
+            ScrollView {
+                VStack(spacing: 28) {
+                    LiveTilt(drag: drag) { tilt in
+                        ProfileCard(type: profile.type, tilt: tilt, scale: scale)
+                    }
+                    .padding(.top, showingNote ? 8 : max(24, (proxy.size.height - cardHeight) / 2 - 24))
+                    .rotation3DEffect(.degrees(entered ? 0 : 80), axis: (x: 0, y: 1, z: 0), perspective: 0.5)
+                    .opacity(entered ? 1 : 0)
+                    .gesture(
+                        DragGesture(minimumDistance: 4)
+                            .onChanged { value in
+                                guard !showingNote else { return }
+                                drag = CGSize(width: max(-1, min(1, value.translation.width / 140)),
+                                              height: max(-1, min(1, -value.translation.height / 180)))
+                            }
+                            .onEnded { _ in withAnimation(.spring(duration: 0.6, bounce: 0.4)) { drag = .zero } }
+                    )
+
+                    if showingNote {
+                        ProfileNote(profile: profile)
+                            .transition(.opacity.combined(with: .offset(y: 24)))
+                        Button("Spin your first topic", action: onContinue)
+                            .buttonStyle(PrimaryButtonStyle(fill: .ember))
+                            .transition(.opacity)
+                    } else {
+                        Text("Tap to see what I noticed")
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(.white.opacity(0.55))
+                            .opacity(entered ? 1 : 0)
+                            .animation(.easeIn(duration: 0.6).delay(1.2), value: entered)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+            .scrollIndicators(.hidden)
+            .scrollDisabled(!showingNote)
+            .background((showingNote ? Color.paper : Color(white: 0.05)).ignoresSafeArea())
+            .contentShape(.rect)
+            .onTapGesture {
+                guard !showingNote else { return }
+                withAnimation(.spring(duration: 0.8, bounce: 0.18)) { showingNote = true }
+            }
+        }
+        .statusBarHidden(!showingNote)
+        .toolbarVisibility(showingNote ? .automatic : .hidden, for: .tabBar)
+        .sensoryFeedback(.success, trigger: entered) { _, new in new }
+        .sensoryFeedback(.impact(weight: .medium), trigger: showingNote) { _, new in new }
+        .onAppear {
+            if AppConfig.calibrationNote { showingNote = true }
+            withAnimation(.spring(duration: 1.2, bounce: 0.3).delay(0.25)) { entered = true }
         }
     }
 
@@ -155,122 +222,34 @@ struct CalibrationResultView: View {
     }
 }
 
-/// The speaking profile: the type, a personal summary, starting numbers, and what the coach will work on.
-/// Shown after calibration and from History.
-struct SpeakingProfileView: View {
+/// What the coach learned from the calibration, in its own words, under the card.
+struct ProfileNote: View {
     let profile: SpeakingProfile
-    var animated = false
-
-    @State private var shown = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 28) {
-            VStack(alignment: .leading, spacing: 8) {
-                Eyebrow("Your speaking profile")
-                Text("You're")
-                    .font(.system(.title3, design: .serif))
-                    .foregroundStyle(.secondary)
-                Text(profile.type.name)
-                    .font(.system(size: 44, weight: .semibold, design: .serif))
-                    .foregroundStyle(Color.ember)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(profile.type.tagline)
-                    .font(.title3)
+        VStack(alignment: .leading, spacing: 16) {
+            Eyebrow("What I noticed")
+            ForEach(Array(paragraphs.enumerated()), id: \.offset) { _, paragraph in
+                Text(paragraph)
+                    .font(.system(size: 18))
+                    .lineSpacing(4)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .reveal(shown, order: 0)
-
-            Text(profile.summary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.leading, 14)
-                .overlay(alignment: .leading) { Capsule().fill(Color.ember).frame(width: 3) }
-                .reveal(shown, order: 1)
-
-            VStack(alignment: .leading, spacing: 10) {
-                Eyebrow("Your starting point")
-                HStack(spacing: 10) {
-                    stat("Pace", "\(Int(profile.baselineWordsPerMinute.rounded()))", "wpm")
-                    stat("Fillers", String(format: "%.1f", profile.baselineFillersPerMinute), "/ min")
-                    stat("Longest pause", String(format: "%.1f", profile.baselineLongestPause), "s")
-                }
-            }
-            .reveal(shown, order: 2)
-
-            VStack(alignment: .leading, spacing: 12) {
-                Eyebrow("What you do well")
-                ForEach(profile.strengths, id: \.self) { strength in
-                    Label {
-                        Text(strength).fixedSize(horizontal: false, vertical: true)
-                    } icon: {
-                        Image(systemName: "checkmark").foregroundStyle(Color.ember)
-                    }
-                }
-            }
-            .reveal(shown, order: 3)
-
-            VStack(alignment: .leading, spacing: 14) {
-                Eyebrow("What we'll work on")
-                ForEach(profile.workOn, id: \.self) { area in
-                    HStack(alignment: .firstTextBaseline, spacing: 12) {
-                        Image(systemName: "scope").foregroundStyle(Color.ember)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(area.label).font(.headline)
-                            Text(area.evidence)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                }
-                Text("Watch out: \(profile.type.watchOut.prefix(1).lowercased() + profile.type.watchOut.dropFirst())")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 2)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
-            .cardBackground()
-            .reveal(shown, order: 4)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Label("For your first topic", systemImage: "arrow.forward.circle.fill")
-                    .font(.caption.weight(.semibold))
-                    .tracking(1.2)
-                    .textCase(.uppercase)
-                    .foregroundStyle(Color.ember)
-                Text(profile.firstTip)
-                    .font(.system(.title3, design: .serif).weight(.medium))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
-            .background(Color.ember.opacity(0.08), in: .rect(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.ember.opacity(0.25)))
-            .reveal(shown, order: 5)
-        }
-        .sensoryFeedback(.success, trigger: shown) { _, new in new && animated }
-        .onAppear {
-            if animated {
-                shown = true
-            } else {
-                var transaction = Transaction()
-                transaction.disablesAnimations = true
-                withTransaction(transaction) { shown = true }
-            }
-        }
-    }
-
-    private func stat(_ label: String, _ value: String, _ unit: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label).font(.caption.weight(.medium)).foregroundStyle(.secondary).lineLimit(2, reservesSpace: true)
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                Text(value).font(.title2.weight(.semibold).monospacedDigit())
-                Text(unit).font(.caption).foregroundStyle(.secondary)
-            }
+            Text("Starting point: \(Int(profile.baselineWordsPerMinute.rounded())) wpm · "
+                 + "\(String(format: "%.1f", profile.baselineFillersPerMinute)) fillers a minute · "
+                 + "\(String(format: "%.1f", profile.baselineLongestPause))s longest pause")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .cardBackground(cornerRadius: 14)
+    }
+
+    private var paragraphs: [String] {
+        (profile.message ?? profile.summary)
+            .components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
     }
 }
 

@@ -66,7 +66,11 @@ struct ResultsView<Footer: View>: View {
                 MetricGrid(attempt: attempt, history: history)
                 TranscriptSection(timeline: timeline, audioURL: localAudioURL)
                 if attempt.kind == .calibration {
-                    if let profile = attempt.speakingProfile { SpeakingProfileView(profile: profile) }
+                    if let profile = attempt.speakingProfile {
+                        LiveTilt { tilt in ProfileCard(type: profile.type, tilt: tilt, scale: 0.5) }
+                            .frame(maxWidth: .infinity)
+                        ProfileNote(profile: profile)
+                    }
                 } else {
                     FeedbackSection(attempt: attempt, error: feedbackError) { Task { await process() } }
                 }

@@ -136,7 +136,7 @@ enum AttemptProcessor {
             let reply = try await FeedbackClient.calibrate(request)
             let minutes = attempt.secondsUsed / 60
             let speaking = SpeakingProfile(
-                type: reply.type, summary: reply.summary, strengths: reply.strengths, workOn: reply.workOn,
+                type: reply.type, summary: reply.summary, message: reply.message, strengths: reply.strengths, workOn: reply.workOn,
                 firstTip: reply.firstTip,
                 baselineWordsPerMinute: attempt.wordsPerMinute,
                 baselineFillersPerMinute: minutes > 0 ? Double(attempt.fillerCount) / minutes : 0,
