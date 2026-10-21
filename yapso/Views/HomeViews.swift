@@ -173,7 +173,7 @@ struct ScenarioBrowser: View {
                             Button {
                                 withAnimation(.snappy(duration: 0.25)) { category = option }
                             } label: {
-                                Label(option.title, systemImage: option.symbol)
+                                Text(option.title)
                                     .font(.subheadline.weight(.medium))
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 9)
@@ -221,7 +221,7 @@ struct ScenarioList: View {
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(scenarios.enumerated()), id: \.element.id) { index, scenario in
-                if index > 0 { Divider().padding(.leading, showsCategory ? 54 : 18) }
+                if index > 0 { Divider().padding(.leading, showsCategory ? 80 : 18) }
                 Button {
                     switch Scenarios.availability(attempts: attempts) {
                     case .available: onStart(scenario)
@@ -246,10 +246,7 @@ struct ScenarioList: View {
     private func row(_ scenario: Scenario) -> some View {
         HStack(spacing: 14) {
             if showsCategory {
-                Image(systemName: scenario.category.symbol)
-                    .font(.body)
-                    .foregroundStyle(Color.ember)
-                    .frame(width: 22)
+                CategoryTile(category: scenario.category)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(scenario.title)
@@ -272,6 +269,28 @@ struct ScenarioList: View {
         .padding(.vertical, 14)
         .contentShape(.rect)
     }
+}
+
+/// A category's ink drawing on a soft ember tile.
+struct CategoryTile: View {
+    let category: ScenarioCategory
+    var size: CGFloat = 48
+
+    var body: some View {
+        Image(category.artworkName)
+            .resizable()
+            .scaledToFit()
+            .foregroundStyle(.primary.opacity(0.85))
+            .padding(size * 0.11)
+            .frame(width: size, height: size)
+            .background(Color.ember.opacity(0.1), in: .rect(cornerRadius: size * 0.27))
+            .accessibilityHidden(true)
+    }
+}
+
+extension ScenarioCategory {
+    /// The category's spot illustration in the asset catalog.
+    var artworkName: String { "Category" + rawValue.prefix(1).uppercased() + rawValue.dropFirst() }
 }
 
 /// On a past rehearsal (in History or its result): take it again, compared against this one.

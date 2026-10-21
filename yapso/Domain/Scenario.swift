@@ -56,10 +56,10 @@ nonisolated enum ScenarioLibrary {
         try JSONDecoder().decode([Scenario].self, from: Data(contentsOf: url))
     }
 
-    /// Today's three suggestions: two from the user's first category and one from the second, preferring scenarios
-    /// they haven't tried. Rotates daily but stays the same all day.
+    /// Today's suggestions: two from the user's first category, then one each from the next ones, preferring
+    /// scenarios they haven't tried. Rotates daily but stays the same all day.
     static func picks(from scenarios: [Scenario], order: [ScenarioCategory], attempted: Set<String>, day: DayKey,
-                      count: Int = 3) -> [Scenario] {
+                      count: Int = 4) -> [Scenario] {
         guard !scenarios.isEmpty else { return [] }
         let dayNumber = Int(day.date()?.timeIntervalSinceReferenceDate ?? 0) / 86_400
         var picked: [Scenario] = []
@@ -71,7 +71,7 @@ nonisolated enum ScenarioLibrary {
             return rotated.first { !attempted.contains($0.id) } ?? rotated.first
         }
 
-        let pattern = order.count > 1 ? [order[0], order[1], order[0]] : order
+        let pattern = order.isEmpty ? [] : [order[0], order[0]] + order.dropFirst()
         for category in pattern.prefix(count) {
             if let scenario = next(in: category) { picked.append(scenario) }
         }
