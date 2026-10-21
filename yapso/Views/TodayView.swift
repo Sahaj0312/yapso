@@ -8,12 +8,13 @@ enum TopicStore {
 struct TodayView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Attempt.revealedAt, order: .reverse) private var attempts: [Attempt]
+    @Query(sort: \CoachProfile.updatedAt, order: .reverse) private var profiles: [CoachProfile]
     @Environment(\.scenePhase) private var scenePhase
     @State private var micDenied = false
-    /// Practice attempts stopped during research: hidden at once, deleted once their screen is gone.
+    /// Rehearsals stopped during prep: hidden at once, deleted once their screen is gone.
     @State private var abandonedIDs: Set<UUID> = []
-    /// The practice result the user has closed, so Today shows the daily result again.
-    @AppStorage("dismissedPracticeID") private var dismissedPracticeID = ""
+    /// The just-finished talk whose full result the user has closed, so Today goes back to the home screen.
+    @AppStorage("dismissedResultID") private var dismissedResultID = ""
     /// The calibration whose result the user has moved on from.
     @AppStorage("seenCalibrationID") private var seenCalibrationID = ""
 
@@ -35,35 +36,22 @@ struct TodayView: View {
             } else if Calibration.isNeeded(attempts: attempts) {
                 CalibrationIntroView { prompt in Task { await startCalibration(prompt) } }
                     .transition(.opacity)
-            } else if let done = todaysResult(now: now) {
-                ResultsView(attempt: done, history: attempts, streak: streak(now: now)) {
-                    resultsFooter(for: done)
+            } else if let fresh = freshResult(now: now) {
+                ResultsView(attempt: fresh, history: attempts, streak: fresh.kind == .daily ? streak(now: now) : nil) {
+                    freshFooter(for: fresh)
                 }
-                .id(done.id)
+                .id(fresh.id)
                 .transition(.opacity)
-                .task {
-                    if AppConfig.autoPractice, done.kind == .daily, case .available = Practice.availability(attempts: attempts) {
-                        try? await Task.sleep(for: .seconds(1.5))
-                        await startPractice()
-                    }
-                }
             } else {
-                ReadyView(streak: streak(now: now)) { Task { await spin() } }
+                home(now: now)
                     .transition(.opacity)
-                    .task {
-                        if let demoFile = AppConfig.demoAttemptFile { insertDemoAttempt(fileName: demoFile) }
-                        if AppConfig.autoSpin {
-                            try? await Task.sleep(for: .seconds(1.5))
-                            await spin()
-                        }
-                    }
             }
         }
         .background(Color.paper.ignoresSafeArea())
         .animation(.smooth(duration: 0.5), value: activeAttempt(now: now)?.id)
-        .animation(.smooth(duration: 0.5), value: todaysResult(now: now)?.id)
+        .animation(.smooth(duration: 0.5), value: freshResult(now: now)?.id)
         .animation(.smooth(duration: 0.5), value: unseenCalibration?.id)
-        .task { Practice.dropAbandoned(attempts: attempts, in: context) }
+        .task { Scenarios.dropAbandoned(attempts: attempts, in: context) }
         // Reschedules the week's reminders, skipping today once it's spun.
         .task(id: Attempt.dailyStarted(on: DayKey(now), in: attempts)) { await refreshReminder() }
         .onChange(of: scenePhase) { _, phase in
@@ -76,6 +64,48 @@ struct TodayView: View {
             Button("Not now", role: .cancel) {}
         } message: {
             Text("Your topic stays hidden until recording works, so you never lose a day to a permission prompt.")
+        }
+    }
+
+    /// Today's topic on top, then the scenario library.
+    private func home(now: Date) -> some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 36) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        TodayHeader(streak: streak(now: now))
+                        DailyCard(attempt: todaysDaily(now: now), history: attempts) { Task { await spin() } }
+                    }
+                    ScenarioShelf(attempts: attempts, onboarding: profiles.first?.memory.onboarding) { scenario in
+                        Task { await startScenario(scenario) }
+                    }
+                }
+                .padding(24)
+            }
+            .scrollIndicators(.hidden)
+            .background(Color.paper.ignoresSafeArea())
+            .toolbarVisibility(.hidden, for: .navigationBar)
+            .navigationDestination(for: UUID.self) { id in
+                if let attempt = attempts.first(where: { $0.id == id }) {
+                    ResultsView(attempt: attempt, history: attempts, streak: nil) {
+                        if attempt.kind == .scenario {
+                            ScenarioRetryButton(attempt: attempt, attempts: attempts)
+                        }
+                    }
+                    .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+        }
+        .task {
+            if let demoFile = AppConfig.demoAttemptFile { insertDemoAttempt(fileName: demoFile) }
+            if AppConfig.autoSpin, todaysDaily(now: .now) == nil {
+                try? await Task.sleep(for: .seconds(1.5))
+                await spin()
+            }
+            if AppConfig.autoScenario, let first = ScenarioStore.all.first {
+                try? await Task.sleep(for: .seconds(1.5))
+                await startScenario(first)
+            }
         }
     }
 
@@ -93,34 +123,33 @@ struct TodayView: View {
         await DailyReminder.refresh(todayStarted: Attempt.dailyStarted(on: DayKey(.now), in: attempts))
     }
 
-    /// The latest finished talk today: a just-finished practice until it's closed, otherwise the daily.
-    private func todaysResult(now: Date) -> Attempt? {
+    private func todaysDaily(now: Date) -> Attempt? {
         let today = DayKey(now).rawValue
-        let finished = attempts.filter { $0.dayKey == today && $0.endedAt != nil }
-        if let latest = finished.first, latest.kind == .practice, latest.id.uuidString != dismissedPracticeID {
-            return latest
-        }
-        return finished.first { $0.kind == .daily }
+        return attempts.first { $0.kind == .daily && $0.dayKey == today && $0.endedAt != nil }
+    }
+
+    /// The talk just finished today (daily or rehearsal), shown in full until the user closes it.
+    private func freshResult(now: Date) -> Attempt? {
+        let today = DayKey(now).rawValue
+        guard let latest = attempts.first(where: { $0.kind != .calibration && $0.dayKey == today && $0.endedAt != nil }),
+              latest.id.uuidString != dismissedResultID else { return nil }
+        return latest
     }
 
     @ViewBuilder
-    private func resultsFooter(for attempt: Attempt) -> some View {
-        let availability = Practice.availability(attempts: attempts)
-        if attempt.kind == .practice {
-            VStack(spacing: 10) {
-                if case .available = availability {
-                    Button("Practice another topic") { Task { await startPractice() } }
-                        .buttonStyle(PrimaryButtonStyle())
-                }
-                Button("Back to today's talk") { dismissedPracticeID = attempt.id.uuidString }
+    private func freshFooter(for attempt: Attempt) -> some View {
+        VStack(spacing: 10) {
+            if attempt.kind == .scenario {
+                ScenarioRetryButton(attempt: attempt, attempts: attempts) { dismissedResultID = attempt.id.uuidString }
+                Button("Done") { dismissedResultID = attempt.id.uuidString }
                     .buttonStyle(SecondaryButtonStyle())
-            }
-        } else {
-            VStack(alignment: .leading, spacing: 24) {
-                PracticeCard(availability: availability) { Task { await startPractice() } }
-                Text("New topic tomorrow.")
+            } else {
+                Button("Done") { dismissedResultID = attempt.id.uuidString }
+                    .buttonStyle(PrimaryButtonStyle())
+                Text("New topic tomorrow. Rehearsals are open any time.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .padding(.top, 4)
             }
         }
     }
@@ -135,8 +164,8 @@ struct TodayView: View {
         if await Calibration.start(prompt: prompt, in: context) == nil { micDenied = true }
     }
 
-    private func startPractice() async {
-        if await Practice.start(attempts: attempts, in: context) == nil, !Permissions.microphoneGranted {
+    private func startScenario(_ scenario: Scenario) async {
+        if await Scenarios.start(scenario, attempts: attempts, in: context) == nil, !Permissions.microphoneGranted {
             micDenied = true
         }
     }
@@ -193,33 +222,6 @@ struct TodayView: View {
         context.insert(attempt)
         try? context.save()
         await ResearchNotifications.schedule(attemptID: attempt.id, topicTitle: topic.title, deadline: attempt.timeline.researchDeadline)
-    }
-}
-
-private struct ReadyView: View {
-    let streak: Int
-    let onSpin: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            TodayHeader(streak: streak)
-            Spacer()
-            Illustration(name: "IllustrationRolodex", height: 210)
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, 40)
-            Eyebrow("Today")
-                .padding(.bottom, 10)
-            Text("Your topic is ready.")
-                .font(.display)
-            Text("10 minutes to research. 90 seconds to explain it. One go.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .padding(.top, 8)
-            Spacer()
-            Button("Spin", action: onSpin)
-                .buttonStyle(PrimaryButtonStyle(fill: .ember))
-        }
-        .padding(24)
     }
 }
 

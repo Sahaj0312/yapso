@@ -1,0 +1,422 @@
+[
+  {
+    "id": "interviews-tell-me-about-yourself",
+    "title": "Tell me about yourself",
+    "prompt": "So, tell me a little about yourself.",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-why-this-role",
+    "title": "Why this role?",
+    "prompt": "Why do you want this job?",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-a-time-you-failed",
+    "title": "A time you failed",
+    "prompt": "Tell me about a time you failed, and what you did next.",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-your-biggest-weakness",
+    "title": "Your biggest weakness",
+    "prompt": "What would you say is your biggest weakness?",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-why-should-we-hire-you",
+    "title": "Why should we hire you?",
+    "prompt": "We have a lot of strong candidates. Why should we hire you?",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-a-conflict-with-a-coworker",
+    "title": "A conflict with a coworker",
+    "prompt": "Tell me about a time you disagreed with a coworker. How did you handle it?",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-your-proudest-work",
+    "title": "Your proudest work",
+    "prompt": "What's the piece of work you're proudest of, and why?",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-where-in-five-years",
+    "title": "Where in five years?",
+    "prompt": "Where do you see yourself in five years?",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-why-are-you-leaving",
+    "title": "Why are you leaving?",
+    "prompt": "Why are you looking to leave your current role?",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-a-tough-decision",
+    "title": "A tough decision",
+    "prompt": "Walk me through a difficult decision you had to make with incomplete information.",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-handling-pressure",
+    "title": "Handling pressure",
+    "prompt": "Tell me about a time you were under a lot of pressure. What did you do?",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-explain-a-gap",
+    "title": "Explain a gap",
+    "prompt": "I see a gap on your resume. Can you walk me through it?",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-salary-expectations",
+    "title": "Salary expectations",
+    "prompt": "What are your salary expectations for this role?",
+    "category": "interviews"
+  },
+  {
+    "id": "interviews-questions-for-us",
+    "title": "Questions for us",
+    "prompt": "We're almost out of time. Do you have any questions for us?",
+    "category": "interviews"
+  },
+  {
+    "id": "speakingUp-push-back-on-a-deadline",
+    "title": "Push back on a deadline",
+    "prompt": "Your manager wants this finished by Friday. It can't be done well by then. Tell them.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-ask-for-a-raise",
+    "title": "Ask for a raise",
+    "prompt": "You've asked for a meeting with your manager to talk about a raise. Make your case.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-say-no-to-extra-work",
+    "title": "Say no to extra work",
+    "prompt": "A colleague asks you to take on their project while you're already at capacity. Say no, kindly.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-disagree-in-a-meeting",
+    "title": "Disagree in a meeting",
+    "prompt": "Everyone in the meeting likes the plan. You think it's a mistake. Speak up.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-take-credit-for-your-work",
+    "title": "Take credit for your work",
+    "prompt": "Your manager just praised a teammate for work you mostly did. Set the record straight, gracefully.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-give-hard-feedback",
+    "title": "Give hard feedback",
+    "prompt": "A teammate's work keeps arriving late and it's affecting you. Tell them.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-correct-someone-senior",
+    "title": "Correct someone senior",
+    "prompt": "A senior leader just stated a number that's wrong in front of the team. Correct it.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-ask-for-help",
+    "title": "Ask for help",
+    "prompt": "You're stuck and behind. Ask your manager for help without sounding like you're failing.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-return-a-bad-order",
+    "title": "Return a bad order",
+    "prompt": "Your meal arrived cold and wrong. Explain the problem to the server.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-negotiate-a-price",
+    "title": "Negotiate a price",
+    "prompt": "You're buying a used car and the price is too high. Negotiate.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-set-a-boundary",
+    "title": "Set a boundary",
+    "prompt": "A friend keeps calling late at night to vent. Tell them you need that to change.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-interrupted-again",
+    "title": "Interrupted again",
+    "prompt": "You keep getting talked over in meetings. Take the floor back and finish your point.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-apologise-for-a-mistake",
+    "title": "Apologise for a mistake",
+    "prompt": "You made a mistake that cost your team a day. Own it.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "speakingUp-ask-for-a-promotion",
+    "title": "Ask for a promotion",
+    "prompt": "Tell your manager you want to be considered for the next promotion, and why.",
+    "category": "speakingUp"
+  },
+  {
+    "id": "presenting-pitch-your-idea",
+    "title": "Pitch your idea",
+    "prompt": "You have 90 seconds with the head of your team. Pitch an idea you believe in.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-open-a-talk",
+    "title": "Open a talk",
+    "prompt": "You're first up at a conference. Open your talk and win the room in the first minute.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-a-tough-question",
+    "title": "A tough question",
+    "prompt": "Halfway through your presentation someone asks: 'Why should we trust these numbers?' Answer.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-explain-a-chart",
+    "title": "Explain a chart",
+    "prompt": "Your slide shows sales dropping 20 percent last quarter. Walk the room through it.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-present-bad-news",
+    "title": "Present bad news",
+    "prompt": "Your project is two months behind. Present that to leadership.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-close-a-talk",
+    "title": "Close a talk",
+    "prompt": "You've reached your last slide. Close the presentation so people remember it.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-introduce-a-speaker",
+    "title": "Introduce a speaker",
+    "prompt": "You're introducing the next speaker, someone you admire. Introduce them.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-the-elevator-pitch",
+    "title": "The elevator pitch",
+    "prompt": "You get in an elevator with an investor. Pitch your startup before the doors open.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-summarise-a-report",
+    "title": "Summarise a report",
+    "prompt": "Leadership didn't read the 30-page report. Summarise what matters.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-demo-something",
+    "title": "Demo something",
+    "prompt": "Demo a product you use every day, as if to people who've never seen it.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-recover-from-a-blank",
+    "title": "Recover from a blank",
+    "prompt": "You've just lost your place mid-presentation. Recover and keep going.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-defend-your-plan",
+    "title": "Defend your plan",
+    "prompt": "A director says your plan is too risky. Defend it.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-explain-your-research",
+    "title": "Explain your research",
+    "prompt": "Explain what you've been working on to a room of people outside your field.",
+    "category": "presenting"
+  },
+  {
+    "id": "presenting-a-short-toast-to-the-team",
+    "title": "A short toast to the team",
+    "prompt": "Your team shipped a big project. Say a few words to celebrate it.",
+    "category": "presenting"
+  },
+  {
+    "id": "meetings-status-update",
+    "title": "Status update",
+    "prompt": "It's stand-up. Give your update on what you're working on.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-explain-a-decision",
+    "title": "Explain a decision",
+    "prompt": "Explain to your team why you chose the option you did, and what you ruled out.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-summarise-the-discussion",
+    "title": "Summarise the discussion",
+    "prompt": "The meeting went in circles. Summarise where things landed and the next steps.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-kick-off-a-meeting",
+    "title": "Kick off a meeting",
+    "prompt": "You called this meeting. Open it: why everyone's here and what you need.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-ask-a-good-question",
+    "title": "Ask a good question",
+    "prompt": "The presenter just finished. Ask a question that moves things forward.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-introduce-yourself-to-a-new-team",
+    "title": "Introduce yourself to a new team",
+    "prompt": "It's your first day. Introduce yourself to the team in the welcome meeting.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-raise-a-risk",
+    "title": "Raise a risk",
+    "prompt": "You see a risk nobody's mentioned. Raise it without sounding negative.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-explain-a-delay",
+    "title": "Explain a delay",
+    "prompt": "A client is on the call and their delivery is late. Explain why and what happens now.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-brainstorm-out-loud",
+    "title": "Brainstorm out loud",
+    "prompt": "The team needs ideas to cut costs by 10 percent. Throw out your best one and build on it.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-run-a-retrospective",
+    "title": "Run a retrospective",
+    "prompt": "The project just wrapped. Lead the team through what went well and what didn't.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-onboard-a-new-hire",
+    "title": "Onboard a new hire",
+    "prompt": "Explain to a new hire how your team works and what they should focus on first.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-wrap-up-with-actions",
+    "title": "Wrap up with actions",
+    "prompt": "Close the meeting: who's doing what, and by when.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-explain-your-role",
+    "title": "Explain your role",
+    "prompt": "Someone from another department asks what your team actually does. Explain.",
+    "category": "meetings"
+  },
+  {
+    "id": "meetings-give-a-quick-opinion",
+    "title": "Give a quick opinion",
+    "prompt": "Your boss turns to you mid-meeting: 'What do you think?' Answer.",
+    "category": "meetings"
+  },
+  {
+    "id": "everyday-a-wedding-toast",
+    "title": "A wedding toast",
+    "prompt": "You're the best friend at the wedding. Give the toast.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-explain-your-job",
+    "title": "Explain your job",
+    "prompt": "At a party, someone asks what you do. Explain it so they actually get it.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-introduce-yourself",
+    "title": "Introduce yourself",
+    "prompt": "You're at a networking event. Introduce yourself to a stranger.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-recommend-a-book",
+    "title": "Recommend a book",
+    "prompt": "Convince a friend to read the best book you've read this year.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-give-directions",
+    "title": "Give directions",
+    "prompt": "A tourist asks how to get from your home to your favourite spot in town. Explain.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-tell-a-funny-story",
+    "title": "Tell a funny story",
+    "prompt": "Tell the funniest thing that's happened to you recently.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-explain-a-hobby",
+    "title": "Explain a hobby",
+    "prompt": "Explain your favourite hobby to someone who's never tried it.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-eulogy-for-a-pet",
+    "title": "Eulogy for a pet",
+    "prompt": "Say a few words remembering a pet, real or imagined.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-plan-a-trip",
+    "title": "Plan a trip",
+    "prompt": "Convince your friends to go on a trip to a place you love.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-explain-the-news",
+    "title": "Explain the news",
+    "prompt": "Explain a news story from this week to someone who missed it.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-comfort-a-friend",
+    "title": "Comfort a friend",
+    "prompt": "A friend just lost their job. Say something that actually helps.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-teach-something-simple",
+    "title": "Teach something simple",
+    "prompt": "Teach someone how to make your favourite drink.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-leave-a-voicemail",
+    "title": "Leave a voicemail",
+    "prompt": "Leave a clear voicemail rescheduling an important appointment.",
+    "category": "everyday"
+  },
+  {
+    "id": "everyday-persuade-on-dinner",
+    "title": "Persuade on dinner",
+    "prompt": "Convince the group to go to the restaurant you picked tonight.",
+    "category": "everyday"
+  }
+]

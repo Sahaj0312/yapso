@@ -83,10 +83,10 @@ final class SessionController {
         tick()
     }
 
-    /// Practice only: gives up before speaking. Stops touching the attempt so the owner can delete it once
+    /// Practice and scenarios only: gives up before speaking. Stops touching the attempt so the owner can delete it once
     /// this screen is gone (deleting it while it's still rendered would crash).
     func abandon() {
-        guard attempt.kind == .practice, attempt.speakingStartedAt == nil else { return }
+        guard attempt.kind == .practice || attempt.kind == .scenario, attempt.speakingStartedAt == nil else { return }
         isAbandoned = true
         countdownTask?.cancel()
         countdownTask = nil

@@ -4,6 +4,7 @@ import SwiftData
 /// Every finished or forfeited talk, newest first, grouped by month.
 struct HistoryView: View {
     @Query(sort: \Attempt.revealedAt, order: .reverse) private var attempts: [Attempt]
+    @Environment(AppRouter.self) private var router
 
     var body: some View {
         NavigationStack {
@@ -47,8 +48,8 @@ struct HistoryView: View {
             .navigationDestination(for: UUID.self) { id in
                 if let attempt = attempts.first(where: { $0.id == id }) {
                     ResultsView(attempt: attempt, history: attempts, streak: nil) {
-                        if attempt.kind != .calibration {
-                            RedoButton(attempt: attempt, attempts: attempts)
+                        if attempt.kind == .scenario {
+                            ScenarioRetryButton(attempt: attempt, attempts: attempts) { router.tab = .today }
                         }
                     }
                     .navigationBarTitleDisplayMode(.inline)
@@ -126,6 +127,7 @@ private struct HistoryRow: View {
     private var details: String {
         var parts = [attempt.topicDomain]
         if attempt.kind == .practice { parts.append("Practice") }
+        if attempt.kind == .scenario { parts.append("Rehearsal") }
         if !spoken {
             parts.append("Not spoken")
         } else {

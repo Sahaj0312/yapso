@@ -10,8 +10,8 @@
     "OPENAI_REASONING": "low",
     "DEEPGRAM_MODEL": "nova-3",
     // Per device per UTC day.
-    "DEVICE_DAILY_TRANSCRIBE": "15",
-    "DEVICE_DAILY_FEEDBACK": "12",
+    "DEVICE_DAILY_TRANSCRIBE": "25",
+    "DEVICE_DAILY_FEEDBACK": "20",
     // Across all devices per UTC day: a backstop on spend until App Attest is in.
     "GLOBAL_DAILY_TRANSCRIBE": "2000",
     "GLOBAL_DAILY_FEEDBACK": "2000"

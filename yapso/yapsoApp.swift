@@ -20,7 +20,7 @@ struct yapsoApp: App {
                 try? container.mainContext.delete(model: Attempt.self)
                 try? container.mainContext.delete(model: CoachProfile.self)
                 try? container.mainContext.save()
-                for key in ["seenCalibrationID", "dismissedPracticeID"] { UserDefaults.standard.removeObject(forKey: key) }
+                for key in ["seenCalibrationID", "dismissedPracticeID", "dismissedResultID"] { UserDefaults.standard.removeObject(forKey: key) }
             }
             if DebugSeed.isRequested { DebugSeed.seedHistory(in: container.mainContext) }
         }

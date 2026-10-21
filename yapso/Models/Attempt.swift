@@ -84,8 +84,13 @@ final class Attempt {
     }
 
     var timeline: SessionTimeline {
-        SessionTimeline(kind: kind, revealedAt: revealedAt, speakingStartedAt: speakingStartedAt, endedAt: endedAt,
-                        researchDuration: kind == .calibration ? 0 : AppConfig.researchDuration)
+        let research: TimeInterval = switch kind {
+        case .calibration: 0
+        case .scenario: SessionTimeline.scenarioPrepDuration
+        case .daily, .practice: AppConfig.researchDuration
+        }
+        return SessionTimeline(kind: kind, revealedAt: revealedAt, speakingStartedAt: speakingStartedAt, endedAt: endedAt,
+                               researchDuration: research)
     }
 }
 
@@ -102,5 +107,14 @@ extension Attempt {
     /// Whether the day's daily topic has been revealed, which is what silences that day's reminder.
     static func dailyStarted(on day: DayKey, in attempts: [Attempt]) -> Bool {
         attempts.contains { $0.kind == .daily && $0.dayKey == day.rawValue }
+    }
+
+    /// The small caption above the title: the domain, marked for practice and rehearsals.
+    var eyebrow: String {
+        switch kind {
+        case .practice: "Practice · \(topicDomain)"
+        case .scenario: "Rehearse · \(topicDomain)"
+        case .daily, .calibration: topicDomain
+        }
     }
 }

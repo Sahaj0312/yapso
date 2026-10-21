@@ -19,7 +19,7 @@ struct FeedbackSection: View {
         switch attempt.feedbackStatus {
         case .complete:
             if let feedback = attempt.contentFeedback {
-                FeedbackBody(feedback: feedback, animated: true)
+                FeedbackBody(feedback: feedback, animated: true, isScenario: attempt.kind == .scenario)
                     .transition(.opacity)
             }
         case .locked:
@@ -56,6 +56,8 @@ struct FeedbackSection: View {
 private struct FeedbackBody: View {
     let feedback: ContentFeedback
     let animated: Bool
+    /// Scenarios get "A strong answer includes" instead of "What you missed".
+    var isScenario = false
 
     @State private var appeared = false
 
@@ -104,7 +106,7 @@ private struct FeedbackBody: View {
 
             if !feedback.whatYouMissed.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Eyebrow("What you missed")
+                    Eyebrow(isScenario ? "A strong answer includes" : "What you missed")
                     ForEach(feedback.whatYouMissed, id: \.self) { idea in
                         HStack(alignment: .firstTextBaseline, spacing: 10) {
                             Circle().fill(Color.primary.opacity(0.4)).frame(width: 5, height: 5)
@@ -238,6 +240,8 @@ extension ContentCriterion {
         case .structure: "Structure"
         case .accuracy: "Accuracy"
         case .ownership: "Ownership"
+        case .relevance: "Relevance"
+        case .presence: "Presence"
         }
     }
 }

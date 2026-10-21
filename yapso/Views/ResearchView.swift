@@ -5,8 +5,11 @@ struct ResearchView: View {
     let remaining: TimeInterval
     let total: TimeInterval
     let onReady: () -> Void
-    /// Practice only: give up on this topic.
+    /// Practice and scenarios only: give up on this one.
     var onStop: (() -> Void)?
+
+    private var isScenario: Bool { attempt.kind == .scenario }
+    private var scenario: Scenario? { isScenario ? ScenarioStore.scenario(id: attempt.topicID) : nil }
 
     @State private var confirmingStart = false
     @State private var copied = false
@@ -14,7 +17,7 @@ struct ResearchView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Eyebrow(attempt.kind == .practice ? "Practice · \(attempt.topicDomain)" : attempt.topicDomain)
+                Eyebrow(attempt.eyebrow)
                 Spacer()
                 if let onStop {
                     Button("Stop", action: onStop)
@@ -23,8 +26,9 @@ struct ResearchView: View {
                 }
             }
             .padding(.bottom, 10)
-            Text(attempt.topicTitle)
-                .font(.display)
+            // A scenario shows the line to respond to; a topic shows its title.
+            Text(scenario?.prompt ?? attempt.topicTitle)
+                .font(isScenario ? .displaySmall : .display)
                 .fixedSize(horizontal: false, vertical: true)
                 .onLongPressGesture {
                     UIPasteboard.general.string = attempt.topicTitle
@@ -39,7 +43,7 @@ struct ResearchView: View {
                     .font(.system(size: 72, weight: .light).monospacedDigit())
                     .contentTransition(.numericText(countsDown: true))
                     .animation(.snappy, value: Int(remaining.rounded(.up)))
-                Text("to research. Speaking starts automatically.")
+                Text(isScenario ? "to think. Speaking starts automatically." : "to research. Speaking starts automatically.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 ProgressView(value: 1 - remaining / total)
@@ -50,15 +54,20 @@ struct ResearchView: View {
             Spacer()
 
             VStack(spacing: 10) {
-                Button {
-                    if let url = searchURL { UIApplication.shared.open(url) }
-                } label: {
-                    Label("Search this", systemImage: "magnifyingglass")
+                if !isScenario {
+                    Button {
+                        if let url = searchURL { UIApplication.shared.open(url) }
+                    } label: {
+                        Label("Search this", systemImage: "magnifyingglass")
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
                 }
-                .buttonStyle(SecondaryButtonStyle())
 
-                Button("I'm ready — start speaking") { confirmingStart = true }
-                    .buttonStyle(PrimaryButtonStyle())
+                // Scenarios are low-stakes reps, so they start without the "one go" confirmation.
+                Button("I'm ready — start speaking") {
+                    if isScenario { onReady() } else { confirmingStart = true }
+                }
+                .buttonStyle(PrimaryButtonStyle())
             }
         }
         .padding(24)

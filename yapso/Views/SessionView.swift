@@ -37,7 +37,7 @@ struct SessionView: View {
                     remaining: deadline.timeIntervalSince(controller.now),
                     total: attempt.timeline.researchDuration,
                     onReady: controller.startEarly,
-                    onStop: attempt.kind == .practice ? {
+                    onStop: attempt.kind == .practice || attempt.kind == .scenario ? {
                         controller.abandon()
                         onAbandon(attempt)
                     } : nil
@@ -48,7 +48,8 @@ struct SessionView: View {
                     .transition(.opacity)
             case .speaking(let cap):
                 SpeakingView(
-                    topicTitle: attempt.topicTitle,
+                    topicTitle: attempt.kind == .scenario
+                        ? (ScenarioStore.scenario(id: attempt.topicID)?.prompt ?? attempt.topicTitle) : attempt.topicTitle,
                     remaining: cap.timeIntervalSince(controller.now),
                     total: attempt.timeline.speakingCap,
                     levels: controller.recorder.levels,

@@ -70,15 +70,17 @@ Rules:
 - Redoing a past topic in practice also sends the previous attempt's summary, so feedback can compare ("Clarity 2 → 4").
 - Visible to the user as **Your focus areas** (Progress tab).
 
-## 5. Practice mode (Pro)
+## 5. Rehearsals: practice for real life
 
-- Unlocks only after today's daily attempt is done.
-- Random new topic or redo of a past topic (from History). Same full flow (10:00 research, start early allowed, 90s).
-- Full AI feedback, labelled "Practice" in History. Does not affect streak, progress, trends, or coach profile.
-- Capped at 5 practice topics a day in the app (the Worker's per-device limits sit a little above).
-- Entry: a "Want another?" card under today's result, and "Redo this topic" on any past talk in History (sends you to Today).
-- The practice spin can be tapped to skip. During research, **Stop** abandons the topic (deleted, doesn't count). Practice never forfeits, so unspoken practice from earlier days is deleted at launch instead of auto-starting a recording.
-- A finished practice result shows on Today until "Back to today's talk".
+Random topics train the underlying skill; rehearsals connect it to the moments users told us they struggle with.
+
+- **Today is a home screen:** today's topic on top (an ember Spin card, or once done a summary card that opens the full result), then **"Practice for real life"**: 70 bundled scenarios (`scenarios.json`) in five categories, as horizontal rows: Interviews, Speaking up, Presenting, Meetings, Everyday. The user's own situations (from onboarding) come first.
+- **Flow:** tap a scenario and the 30-second prep starts at once (no spin, no research, no "one go" confirmation; **Stop** abandons it), then up to 90 seconds. The prompt stays on screen while speaking.
+- **Feedback** is scenario-specific: Clarity, Structure, **Relevance** (did you answer what was asked) and **Presence** (conviction vs hedging), "A strong answer includes" (≤2), one tip, and a comparison with the last attempt at the same scenario. Rehearsals read the coach memory but never update it, and never count toward the streak or Progress.
+- **Try again** on the result (and in History) retakes the same scenario, compared with the previous take. Cards show the best score so far.
+- **Pro**, with one free rehearsal for free users. Available any time, before or after the daily. Up to 8 a day (Worker per-device limits: 25 transcriptions, 20 feedbacks a day).
+- After any talk, its full result shows on Today until **Done**; then Today returns to the home screen.
+- Random-topic practice (and redoing past topics) was replaced by rehearsals. Old practice attempts still display.
 
 ## 6. Streaks
 
@@ -87,7 +89,7 @@ Rules:
 ## 7. Monetization
 
 - **Free:** daily attempt + on-device delivery metrics + transcript + audio. **One** real AI feedback on the first daily attempt. After that the AI section renders a **hardcoded blurred preview** (identical for all free users).
-- **Pro:** AI content feedback + coach memory, practice mode, Progress tab (trends + focus areas).
+- **Pro:** AI content feedback + coach memory, rehearsals (one free try for free users), Progress tab (trends + focus areas).
 - The free attempt's coach profile is kept silently; if the user later subscribes, the coach continues from it.
 - Paywalls: (1) dismissible soft paywall at end of onboarding, (2) real pitch after the free AI feedback is used up. Mocked with a fake Subscribe button until RevenueCat is integrated.
 - Everything is unlocked during development.
@@ -109,7 +111,7 @@ No speaking during onboarding. No account. Notification permission is requested 
 
 ## 9. App structure
 
-- **Today** — streak, spin / active session / today's result; practice entry after the daily attempt.
+- **Today** — streak and Settings gear, today's topic card (Spin, or summary → full result), then the rehearsal library. A just-finished talk shows in full until Done.
 - **History** — attempts list → full feedback, transcript, audio playback. Practice labelled.
 - **Progress** (Pro) — trend charts (daily attempts only) + Your focus areas.
 - Settings (gear): reminder time, spin sound toggle, subscription.

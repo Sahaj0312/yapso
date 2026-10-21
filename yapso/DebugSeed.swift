@@ -13,7 +13,9 @@ enum DebugSeed {
               (try? context.fetchCount(FetchDescriptor<Attempt>())) == 0 else { return }
 
         let calendar = Calendar.current
-        for daysAgo in (0...14).reversed() where daysAgo != 6 && daysAgo != 10 {
+        // `-yapsoSeedNoToday` leaves today unspun, to see the Spin card.
+        let skipToday = ProcessInfo.processInfo.arguments.contains("-yapsoSeedNoToday")
+        for daysAgo in (0...14).reversed() where daysAgo != 6 && daysAgo != 10 && !(skipToday && daysAgo == 0) {
             // Today's talk finished a few minutes ago, so Today shows its result and practice.
             let day = daysAgo == 0 ? Date.now.addingTimeInterval(-900) : calendar.date(byAdding: .day, value: -daysAgo, to: .now)!
             let progress = min(1, Double(14 - daysAgo) / 13)
@@ -51,6 +53,38 @@ enum DebugSeed {
             )
             attempt.feedbackStatus = .complete
             context.insert(attempt)
+            // Today's result counts as already seen, so the home screen shows.
+            if daysAgo == 0 { UserDefaults.standard.set(attempt.id.uuidString, forKey: "dismissedResultID") }
+        }
+
+        // Two rehearsals of the same interview question, the second better.
+        if let scenario = ScenarioStore.all.first {
+            for (daysAgo, base) in [(3, 2), (1, 4)] {
+                let day = calendar.date(byAdding: .day, value: -daysAgo, to: .now)!
+                let rehearsal = Attempt(kind: .scenario, topic: Topic(id: scenario.id, title: scenario.title, domain: scenario.category.title),
+                                        revealedAt: day)
+                rehearsal.speakingStartedAt = day.addingTimeInterval(30)
+                rehearsal.secondsUsed = 70
+                rehearsal.endedAt = day.addingTimeInterval(100)
+                rehearsal.isTranscribed = true
+                rehearsal.wordCount = 150
+                rehearsal.wordsPerMinute = 128
+                rehearsal.fillerCount = 4
+                rehearsal.transcript = "Sample answer."
+                rehearsal.transcriptTimeline = TranscriptTimeline(text: "Sample answer.", words: [
+                    TranscribedWord(text: "Sample", start: 0, end: 0.4), TranscribedWord(text: " answer.", start: 0.5, end: 0.9),
+                ], pauses: [])
+                rehearsal.contentFeedback = ContentFeedback(
+                    coachNote: nil,
+                    ratings: [ContentCriterion.clarity, .structure, .relevance, .presence].map {
+                        CriterionRating(criterion: $0, score: base, reason: "Sample reason.")
+                    },
+                    flaggedClaims: [], whatYouMissed: ["Name one result with a number."],
+                    nextTimeTip: "Lead with the role you want, then one proof point.", comparison: nil
+                )
+                rehearsal.feedbackStatus = .complete
+                context.insert(rehearsal)
+            }
         }
 
         // The calibration that came first. Its result shows on Today with `-yapsoCalibrationResult`.

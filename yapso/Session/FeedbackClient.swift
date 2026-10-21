@@ -34,7 +34,6 @@ nonisolated enum FeedbackClient {
     /// The model's reply. Daily talks also get a replacement memory (without onboarding answers, which only the app keeps).
     private struct Response: Decodable {
         struct Rating: Decodable { var score: Int; var reason: String }
-        struct Ratings: Decodable { var clarity, structure, accuracy, ownership: Rating }
         struct Memory: Decodable {
             var weaknesses: [FocusArea]
             var strengths: [String]
@@ -42,8 +41,10 @@ nonisolated enum FeedbackClient {
         }
 
         var coachNote: String?
-        var ratings: Ratings
-        var flaggedClaims: [FlaggedClaim]
+        /// Keyed by criterion: topics send clarity/structure/accuracy/ownership, scenarios clarity/structure/relevance/presence.
+        var ratings: [String: Rating]
+        /// Topics only.
+        var flaggedClaims: [FlaggedClaim]?
         var whatYouMissed: [String]
         var nextTimeTip: String
         var comparison: String?
@@ -93,14 +94,16 @@ nonisolated enum FeedbackClient {
     }
 
     private static func feedback(from reply: Response) -> ContentFeedback {
-        let r = reply.ratings
-        let ratings: [(ContentCriterion, Response.Rating)] = [
-            (.clarity, r.clarity), (.structure, r.structure), (.accuracy, r.accuracy), (.ownership, r.ownership),
-        ]
+        // In criterion order, whichever four the reply rated.
+        let ratings = ContentCriterion.allCases.compactMap { criterion in
+            reply.ratings[criterion.rawValue].map {
+                CriterionRating(criterion: criterion, score: min(5, max(1, $0.score)), reason: $0.reason)
+            }
+        }
         return ContentFeedback(
             coachNote: reply.coachNote,
-            ratings: ratings.map { CriterionRating(criterion: $0, score: min(5, max(1, $1.score)), reason: $1.reason) },
-            flaggedClaims: reply.flaggedClaims,
+            ratings: ratings,
+            flaggedClaims: reply.flaggedClaims ?? [],
             whatYouMissed: reply.whatYouMissed,
             nextTimeTip: reply.nextTimeTip,
             comparison: reply.comparison

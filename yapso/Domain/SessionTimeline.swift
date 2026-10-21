@@ -4,6 +4,8 @@ nonisolated enum AttemptKind: String, Codable, Sendable {
     case daily, practice
     /// The one-time 60-second talk about the user that builds their speaking profile. No topic, no research.
     case calibration
+    /// Rehearsing a real-life moment (an interview question, pushing back on a deadline). 30 seconds to think, not 10 minutes.
+    case scenario
 }
 
 nonisolated enum SessionPhase: Equatable, Sendable {
@@ -26,6 +28,8 @@ nonisolated struct SessionTimeline: Sendable {
     static let defaultResearchDuration: TimeInterval = 10 * 60
     static let topicSpeakingCap: TimeInterval = 90
     static let calibrationSpeakingCap: TimeInterval = 60
+    /// Real life doesn't give you research time.
+    static let scenarioPrepDuration: TimeInterval = 30
 
     var kind: AttemptKind
     /// When the rolodex lands and the research clock starts.

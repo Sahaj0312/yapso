@@ -5,7 +5,7 @@ import SwiftData
 /// a crash or a failed upload; attempts whose audio lives on another device are left alone.
 ///
 /// Daily talks are transcribed by Deepgram only, so they fail with `APIError.offline` until there's a
-/// connection. Practice talks fall back to the on-device model. Then the coach's feedback is requested.
+/// connection. Practice and scenario talks fall back to the on-device model. Then the coach's feedback is requested.
 enum AttemptProcessor {
     private static var inFlight: Set<UUID> = []
     private static var feedbackInFlight: Set<UUID> = []
@@ -34,7 +34,7 @@ enum AttemptProcessor {
         }
 
         async let levels = Task.detached { [url] in try AudioLevels.frameLevels(fileURL: url) }.value
-        let (text, words, source) = try await transcribe(url, kind: attempt.kind, keyterms: attempt.kind == .calibration ? [] : [attempt.topicTitle])
+        let (text, words, source) = try await transcribe(url, kind: attempt.kind, keyterms: attempt.kind == .daily || attempt.kind == .practice ? [attempt.topicTitle] : [])
         let pauses = DeliveryAnalyzer.pauses(frameLevels: try await levels, frameDuration: AudioLevels.frameDuration)
         apply(TranscriptTimeline(text: text, words: words, pauses: pauses), source: source, to: attempt)
     }
@@ -45,7 +45,8 @@ enum AttemptProcessor {
             let (text, words) = try await CloudTranscriber.transcribe(fileURL: url, keyterms: keyterms)
             return (text, words, .cloud)
         } catch {
-            guard kind == .practice else { throw error }
+            // Only reps fall back to the less accurate offline model; daily talks and the calibration wait for the cloud.
+            guard kind == .practice || kind == .scenario else { throw error }
             let (text, words) = try await withTimeout(seconds: 60) { try await OnDeviceTranscriber.transcribe(fileURL: url) }
             return (text, words, .onDevice)
         }
@@ -54,15 +55,13 @@ enum AttemptProcessor {
     /// Requests the coach's content feedback once a talk with words is transcribed. Daily talks also replace the
     /// coach's memory. Free users get one real feedback; later ones are marked locked.
     static func requestFeedbackIfNeeded(_ attempt: Attempt, history: [Attempt]) async throws {
-        // The calibration is free for everyone and never counts as the free tier's one feedback.
-        let requestable: Set<FeedbackStatus> = AppConfig.hasPro || attempt.kind == .calibration
-            ? [.notRequested, .pending, .failed, .locked] : [.notRequested, .pending, .failed]
+        let allowed = feedbackAllowed(for: attempt, history: history)
+        let requestable: Set<FeedbackStatus> = allowed ? [.notRequested, .pending, .failed, .locked] : [.notRequested, .pending, .failed]
         guard attempt.isTranscribed, requestable.contains(attempt.feedbackStatus), !feedbackInFlight.contains(attempt.id),
               let timeline = attempt.transcriptTimeline, !timeline.words.isEmpty,
               let context = attempt.modelContext else { return }
 
-        if !AppConfig.hasPro, attempt.kind != .calibration,
-           history.contains(where: { $0.id != attempt.id && $0.kind != .calibration && $0.feedbackStatus == .complete }) {
+        if !allowed {
             attempt.feedbackStatus = .locked
             try? context.save()
             return
@@ -90,9 +89,11 @@ enum AttemptProcessor {
                     ratings: Dictionary(uniqueKeysWithValues: (earlier.contentFeedback?.ratings ?? []).map { ($0.criterion.rawValue, $0.score) })
                 )
             }
+        // A scenario's "topic" is the line being answered, which is what the coach needs.
+        let topicTitle = attempt.kind == .scenario ? (ScenarioStore.scenario(id: attempt.topicID)?.prompt ?? attempt.topicTitle) : attempt.topicTitle
         let request = FeedbackClient.Request(
             kind: attempt.kind,
-            topic: .init(title: attempt.topicTitle, domain: attempt.topicDomain),
+            topic: .init(title: topicTitle, domain: attempt.topicDomain),
             transcript: timeline.text,
             metrics: .init(wordCount: attempt.wordCount, wordsPerMinute: attempt.wordsPerMinute, fillerCount: attempt.fillerCount,
                            longestPause: attempt.longestPauseSeconds, secondsUsed: attempt.secondsUsed),
@@ -126,6 +127,16 @@ enum AttemptProcessor {
             attempt.feedbackStatus = .failed
             try? context.save()
             throw error
+        }
+    }
+
+    /// Free users get the calibration, one coach feedback on a daily topic, and one scenario try. Pro gets everything.
+    private static func feedbackAllowed(for attempt: Attempt, history: [Attempt]) -> Bool {
+        if AppConfig.hasPro || attempt.kind == .calibration { return true }
+        let isScenario = attempt.kind == .scenario
+        return !history.contains { other in
+            other.id != attempt.id && other.feedbackStatus == .complete && other.kind != .calibration
+                && (other.kind == .scenario) == isScenario
         }
     }
 

@@ -2,7 +2,7 @@ import { HTTPError, json } from "./http";
 
 /// What the app sends. The prompt is built here, never by the client.
 interface FeedbackRequest {
-  kind: "daily" | "practice" | "calibration";
+  kind: "daily" | "practice" | "calibration" | "scenario";
   topic: { title: string; domain: string };
   transcript: string;
   metrics: { wordCount: number; wordsPerMinute: number; fillerCount: number; longestPause: number; secondsUsed: number };
@@ -17,6 +17,7 @@ export async function feedback(request: Request, env: Env): Promise<Response> {
   const body = await parse(request);
   const isDaily = body.kind === "daily";
   const isCalibration = body.kind === "calibration";
+  const isScenario = body.kind === "scenario";
 
   // Under the app's 60s timeout, so a stalled model call fails cleanly and the app offers "Try again".
   const upstream = await fetch("https://api.openai.com/v1/responses", {
@@ -25,14 +26,16 @@ export async function feedback(request: Request, env: Env): Promise<Response> {
     headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: env.OPENAI_MODEL,
-      instructions: isCalibration ? calibrationInstructions : instructions,
-      input: isCalibration ? describeCalibration(body) : describe(body),
+      instructions: isCalibration ? calibrationInstructions : isScenario ? scenarioInstructions : instructions,
+      input: isCalibration ? describeCalibration(body) : isScenario ? describeScenario(body) : describe(body),
       reasoning: { effort: env.OPENAI_REASONING },
       store: false,
       text: {
         format: isCalibration
           ? { type: "json_schema", name: "speaking_profile", strict: true, schema: calibrationSchema }
-          : { type: "json_schema", name: "feedback", strict: true, schema: schema(isDaily) },
+          : isScenario
+            ? { type: "json_schema", name: "scenario_feedback", strict: true, schema: scenarioSchema }
+            : { type: "json_schema", name: "feedback", strict: true, schema: schema(isDaily) },
       },
     }),
   });
@@ -61,7 +64,7 @@ async function parse(request: Request): Promise<FeedbackRequest> {
   }
   // 90 seconds is ~300 words; anything far beyond that isn't a talk.
   const valid =
-    (body.kind === "daily" || body.kind === "practice" || body.kind === "calibration") &&
+    ["daily", "practice", "calibration", "scenario"].includes(body.kind) &&
     typeof body.topic?.title === "string" && body.topic.title.length <= 200 &&
     typeof body.transcript === "string" && body.transcript.trim().length > 0 && body.transcript.length <= 4000 &&
     typeof body.metrics === "object" &&
@@ -269,4 +272,70 @@ firstTip: one concrete thing to try in their first real topic tomorrow, at most 
 message: what you noticed, written to them like a short text from a coach who just listened: conversational, plain words, first person ("I noticed..."), 60-90 words in three short paragraphs separated by a blank line. First: what kind of speaker they are and the specific moment in their answer that showed it. Second: what worked, and what got in the way, concretely. Third: what you'll work on together first, ending with the tip for their first topic. No headings, no lists, no quotes longer than a few words.
 
 Voice: warm but direct, like a good coach meeting someone for the first time. No "Great job", no exclamation marks, no emojis, no em dashes. Speak to them as "you". If they said very little, be kind and still give a useful profile.`;
+
+// MARK: - Scenarios
+
+/// Rehearsing a real-life moment: the topic title is the line they're answering.
+function describeScenario(body: FeedbackRequest): string {
+  const round = (n: number) => Math.round(n * 10) / 10;
+  const m = body.metrics;
+  const lines = [
+    `Situation (${body.topic.domain}): ${body.topic.title}`,
+    `Delivery: ${round(m.secondsUsed)}s of 90s used, ${m.wordCount} words, ${Math.round(m.wordsPerMinute)} wpm, ` +
+      `${m.fillerCount} fillers, longest pause ${round(m.longestPause)}s.`,
+    `What you remember about them: ${JSON.stringify(body.memory ?? {})}`,
+  ];
+  if (body.previous) {
+    lines.push("", `Their last attempt at this same situation was rated ${JSON.stringify(body.previous.ratings)}. Transcript:`,
+      `"""${body.previous.transcript}"""`);
+  }
+  lines.push("", "Transcript:", `"""${body.transcript}"""`);
+  return lines.join("\n");
+}
+
+const scenarioRating = {
+  type: "object",
+  properties: { score: { type: "integer", minimum: 1, maximum: 5 }, reason: words(15) },
+  required: ["score", "reason"],
+  additionalProperties: false,
+};
+
+const scenarioSchema = {
+  type: "object",
+  properties: {
+    coachNote: { anyOf: [words(30), { type: "null" }] },
+    ratings: {
+      type: "object",
+      properties: { clarity: scenarioRating, structure: scenarioRating, relevance: scenarioRating, presence: scenarioRating },
+      required: ["clarity", "structure", "relevance", "presence"],
+      additionalProperties: false,
+    },
+    whatYouMissed: { type: "array", maxItems: 2, items: words(20) },
+    nextTimeTip: words(25),
+    comparison: { anyOf: [words(25), { type: "null" }] },
+  },
+  required: ["coachNote", "ratings", "whatYouMissed", "nextTimeTip", "comparison"],
+  additionalProperties: false,
+};
+
+const scenarioInstructions = `You are the coach inside Yapso, a speaking-practice app. The user is rehearsing a real-life moment they find hard: an interview question, pushing back, presenting, a meeting, or an everyday situation. They had 30 seconds to think and up to 90 seconds to respond out loud, as if it were real. You receive the situation, their transcript, delivery metrics, and what you remember about them.
+
+The transcript comes from automatic speech recognition. Odd words that sound like the right word are probably mishearings: ignore them.
+
+Rate 1-5 on four criteria, judged as the real listener in that situation would (interviewer, manager, audience, friend):
+- clarity: easy to follow, plain words, concrete.
+- structure: gets to the point early, organised (for stories: situation, action, result), ends cleanly.
+- relevance: actually answers what was asked or achieves what the moment needs, without drifting.
+- presence: sounds confident and owns it; hedging ("kind of", "I guess", over-apologising), rambling or underselling scores low.
+Calibrate: 3 is solid, 4 is strong, 5 is rare. Each reason at most 15 words, specific to what they said.
+
+whatYouMissed: 0-2 things a strong answer in this situation would include that theirs didn't, stated as the move itself ("Name the result: the launch shipped two weeks early."). Never list something they did.
+
+nextTimeTip: one concrete thing to do on their next try, at most 25 words.
+
+coachNote: null unless they said something about how they feel, or froze or gave up; then at most 30 words, honest and encouraging.
+
+comparison: only when a previous attempt at the same situation is given: one sentence on what changed, naming scores. Otherwise null.
+
+Voice: warm but direct, like a good coach running a mock. No "Great job", no exclamation marks, no emojis, no em dashes. Speak to them as "you".`;
 

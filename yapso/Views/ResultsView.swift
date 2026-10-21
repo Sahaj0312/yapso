@@ -30,10 +30,16 @@ struct ResultsView<Footer: View>: View {
                         TodayHeader(streak: streak)
                             .padding(.bottom, 24)
                     }
-                    Eyebrow(attempt.kind == .practice && streak != nil ? "Practice · \(attempt.topicDomain)" : attempt.topicDomain)
+                    Eyebrow(attempt.eyebrow)
                     Text(attempt.topicTitle)
                         .font(.display)
                         .fixedSize(horizontal: false, vertical: true)
+                    if attempt.kind == .scenario, let prompt = ScenarioStore.scenario(id: attempt.topicID)?.prompt {
+                        Text("“\(prompt)”")
+                            .font(.system(.body, design: .serif).italic())
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     if streak == nil {
                         Text(subtitle)
                             .font(.subheadline)
@@ -101,6 +107,7 @@ struct ResultsView<Footer: View>: View {
         let date = attempt.revealedAt.formatted(.dateTime.weekday(.wide).month(.wide).day())
         switch attempt.kind {
         case .practice: return "\(date) · Practice"
+        case .scenario: return "\(date) · Rehearsal"
         case .calibration: return "\(date) · Your first talk"
         case .daily: return date
         }

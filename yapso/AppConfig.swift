@@ -18,10 +18,10 @@ nonisolated enum AppConfig {
         #endif
     }
 
-    /// Launch with `-yapsoAutoPractice` (Debug only) to start a practice topic as soon as today's result shows.
-    static var autoPractice: Bool {
+    /// Launch with `-yapsoAutoScenario` (Debug only) to start the first scenario as soon as the home screen shows.
+    static var autoScenario: Bool {
         #if DEBUG
-        return ProcessInfo.processInfo.arguments.contains("-yapsoAutoPractice")
+        return ProcessInfo.processInfo.arguments.contains("-yapsoAutoScenario")
         #else
         return false
         #endif

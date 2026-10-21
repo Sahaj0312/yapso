@@ -12,7 +12,9 @@ nonisolated enum FeedbackStatus: String, Codable, Sendable {
 }
 
 nonisolated enum ContentCriterion: String, Codable, CaseIterable, Sendable {
-    case clarity, structure, accuracy, ownership
+    /// Topics are rated on clarity, structure, accuracy and ownership; scenarios swap the last two for
+    /// relevance (did you answer what was asked) and presence (conviction vs hedging).
+    case clarity, structure, accuracy, ownership, relevance, presence
 }
 
 nonisolated struct CriterionRating: Codable, Hashable, Sendable {
