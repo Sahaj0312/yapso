@@ -108,5 +108,14 @@ nonisolated enum AppConfig {
         #endif
     }
 
+    /// Launch with `-yapsoBrowse` (Debug only) to open the rehearsal library on launch.
+    static var openBrowser: Bool {
+        #if DEBUG
+        return ProcessInfo.processInfo.arguments.contains("-yapsoBrowse")
+        #else
+        return false
+        #endif
+    }
+
     static let spinDuration: TimeInterval = 3.2
 }

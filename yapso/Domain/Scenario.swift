@@ -56,6 +56,32 @@ nonisolated enum ScenarioLibrary {
         try JSONDecoder().decode([Scenario].self, from: Data(contentsOf: url))
     }
 
+    /// Today's three suggestions: two from the user's first category and one from the second, preferring scenarios
+    /// they haven't tried. Rotates daily but stays the same all day.
+    static func picks(from scenarios: [Scenario], order: [ScenarioCategory], attempted: Set<String>, day: DayKey,
+                      count: Int = 3) -> [Scenario] {
+        guard !scenarios.isEmpty else { return [] }
+        let dayNumber = Int(day.date()?.timeIntervalSinceReferenceDate ?? 0) / 86_400
+        var picked: [Scenario] = []
+
+        func next(in category: ScenarioCategory) -> Scenario? {
+            let pool = scenarios.filter { $0.category == category && !picked.contains($0) }
+            guard !pool.isEmpty else { return nil }
+            let rotated = Array(pool[(dayNumber % pool.count)...] + pool[..<(dayNumber % pool.count)])
+            return rotated.first { !attempted.contains($0.id) } ?? rotated.first
+        }
+
+        let pattern = order.count > 1 ? [order[0], order[1], order[0]] : order
+        for category in pattern.prefix(count) {
+            if let scenario = next(in: category) { picked.append(scenario) }
+        }
+        // Top up from the remaining categories if the first ones ran dry.
+        for category in order where picked.count < count {
+            if let scenario = next(in: category) { picked.append(scenario) }
+        }
+        return picked
+    }
+
     static func loadBundled(bundle: Bundle = .main) throws -> [Scenario] {
         guard let url = bundle.url(forResource: "scenarios", withExtension: "json") else { throw TopicLibrary.LoadError.missingResource }
         return try load(from: url)

@@ -114,51 +114,134 @@ extension Attempt {
 
 // MARK: - Scenarios
 
-/// "Practice for real life": scenario rows grouped by situation, the user's own situations first.
+/// "Practice for real life" on Today: three rehearsals picked for the user today, then a way into the full library.
 struct ScenarioShelf: View {
     let attempts: [Attempt]
     let onboarding: OnboardingAnswers?
+    let onStart: (Scenario) -> Void
+
+    @State private var browsing = false
+
+    var body: some View {
+        let order = ScenarioCategory.ordered(for: onboarding)
+        let attempted = Set(attempts.filter { $0.kind == .scenario }.map(\.topicID))
+        let picks = ScenarioLibrary.picks(from: ScenarioStore.all, order: order, attempted: attempted, day: DayKey(.now))
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Eyebrow("Practice for real life")
+                Text("Rehearse the moments that matter.")
+                    .font(.displaySmall)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(Scenarios.caption(attempts: attempts))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            ScenarioList(scenarios: picks, attempts: attempts, showsCategory: true, onStart: onStart)
+
+            Button {
+                browsing = true
+            } label: {
+                HStack {
+                    Text("Browse all \(ScenarioStore.all.count) rehearsals")
+                        .font(.subheadline.weight(.semibold))
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                }
+                .foregroundStyle(Color.ember)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+        }
+        .navigationDestination(isPresented: $browsing) {
+            ScenarioBrowser(attempts: attempts, order: order, onStart: onStart)
+        }
+        .onAppear { if AppConfig.openBrowser { browsing = true } }
+    }
+}
+
+/// Every rehearsal: a row of category chips and one list.
+struct ScenarioBrowser: View {
+    let attempts: [Attempt]
+    let order: [ScenarioCategory]
+    let onStart: (Scenario) -> Void
+
+    @State private var category: ScenarioCategory?
+
+    var body: some View {
+        let selected = category ?? order.first ?? .interviews
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 8) {
+                        ForEach(order, id: \.self) { option in
+                            Button {
+                                withAnimation(.snappy(duration: 0.25)) { category = option }
+                            } label: {
+                                Label(option.title, systemImage: option.symbol)
+                                    .font(.subheadline.weight(.medium))
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 9)
+                                    .foregroundStyle(option == selected ? Color.white : .primary)
+                                    .background(option == selected ? Color.ember : Color.card, in: .capsule)
+                                    .overlay(Capsule().strokeBorder(option == selected ? Color.clear : Color.hairline))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                }
+                .scrollIndicators(.hidden)
+                .padding(.horizontal, -24)
+                .sensoryFeedback(.selection, trigger: selected)
+
+                Text(Scenarios.caption(attempts: attempts))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                ScenarioList(scenarios: ScenarioStore.all.filter { $0.category == selected }, attempts: attempts,
+                             showsCategory: false, onStart: onStart)
+                    .id(selected)
+                    .transition(.opacity)
+            }
+            .padding(24)
+        }
+        .scrollIndicators(.hidden)
+        .background(Color.paper.ignoresSafeArea())
+        .navigationTitle("Rehearsals")
+        .navigationBarTitleDisplayMode(.large)
+    }
+}
+
+/// Scenarios as rows in one card. Tapping one starts it, or explains why it can't.
+struct ScenarioList: View {
+    let scenarios: [Scenario]
+    let attempts: [Attempt]
+    let showsCategory: Bool
     let onStart: (Scenario) -> Void
 
     @State private var showPaywall = false
     @State private var limitReached = false
 
     var body: some View {
-        let availability = Scenarios.availability(attempts: attempts)
-        VStack(alignment: .leading, spacing: 26) {
-            VStack(alignment: .leading, spacing: 6) {
-                Eyebrow("Practice for real life")
-                Text("Rehearse the moments that matter.")
-                    .font(.displaySmall)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(caption(availability))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            ForEach(ScenarioCategory.ordered(for: onboarding), id: \.self) { category in
-                VStack(alignment: .leading, spacing: 12) {
-                    Label(category.title, systemImage: category.symbol)
-                        .font(.headline)
-                    ScrollView(.horizontal) {
-                        LazyHStack(spacing: 12) {
-                            ForEach(ScenarioStore.all.filter { $0.category == category }) { scenario in
-                                ScenarioCard(scenario: scenario, best: bestScore(for: scenario)) {
-                                    switch availability {
-                                    case .available: onStart(scenario)
-                                    case .needsPro: showPaywall = true
-                                    case .limitReached: limitReached = true
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 24)
+        VStack(spacing: 0) {
+            ForEach(Array(scenarios.enumerated()), id: \.element.id) { index, scenario in
+                if index > 0 { Divider().padding(.leading, showsCategory ? 54 : 18) }
+                Button {
+                    switch Scenarios.availability(attempts: attempts) {
+                    case .available: onStart(scenario)
+                    case .needsPro: showPaywall = true
+                    case .limitReached: limitReached = true
                     }
-                    .scrollIndicators(.hidden)
-                    .padding(.horizontal, -24)
+                } label: {
+                    row(scenario)
                 }
+                .buttonStyle(.plain)
             }
         }
+        .cardBackground(cornerRadius: 18)
         .sheet(isPresented: $showPaywall) { PaywallView(context: .upgrade) }
         .alert("That's \(Scenarios.dailyLimit) for today", isPresented: $limitReached) {
             Button("OK", role: .cancel) {}
@@ -167,60 +250,34 @@ struct ScenarioShelf: View {
         }
     }
 
-    private func caption(_ availability: Scenarios.Availability) -> String {
-        switch availability {
-        case .available where !AppConfig.hasPro: "Your first rehearsal is free. 30 seconds to think, 90 to answer."
-        case .available: "30 seconds to think, 90 to answer, as many takes as you like."
-        case .needsPro: "Rehearsals are part of Pro."
-        case .limitReached: "That's \(Scenarios.dailyLimit) for today. Back tomorrow."
-        }
-    }
-
-    private func bestScore(for scenario: Scenario) -> Double? {
-        attempts.filter { $0.kind == .scenario && $0.topicID == scenario.id }.compactMap(\.averageScore).max()
-    }
-}
-
-private struct ScenarioCard: View {
-    let scenario: Scenario
-    let best: Double?
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
+    private func row(_ scenario: Scenario) -> some View {
+        HStack(spacing: 14) {
+            if showsCategory {
+                Image(systemName: scenario.category.symbol)
+                    .font(.body)
+                    .foregroundStyle(Color.ember)
+                    .frame(width: 22)
+            }
+            VStack(alignment: .leading, spacing: 3) {
                 Text(scenario.title)
-                    .font(.system(.headline, design: .serif))
+                    .font(.system(.body, design: .serif).weight(.semibold))
                     .foregroundStyle(.primary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
                 Text(scenario.prompt)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .lineLimit(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-                HStack {
-                    if let best {
-                        Label(best.formatted(.number.precision(.fractionLength(1))), systemImage: "star.fill")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Color.ember)
-                    } else {
-                        Text("90s").font(.caption).foregroundStyle(.tertiary)
-                    }
-                    Spacer()
-                    Image(systemName: "mic.fill")
-                        .font(.caption)
-                        .foregroundStyle(Color.ember)
-                }
+                    .lineLimit(1)
             }
-            .multilineTextAlignment(.leading)
-            .frame(width: 196, height: 116, alignment: .topLeading)
-            .padding(16)
-            .cardBackground(cornerRadius: 16)
-            .contentShape(.rect)
+            Spacer(minLength: 8)
+            if let best = attempts.filter({ $0.kind == .scenario && $0.topicID == scenario.id }).compactMap(\.averageScore).max() {
+                ScoreBadge(score: best)
+            }
+            Image(systemName: "mic.fill")
+                .font(.footnote)
+                .foregroundStyle(Color.ember)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .contentShape(.rect)
     }
 }
 

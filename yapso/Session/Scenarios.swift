@@ -30,6 +30,16 @@ enum Scenarios {
         return used < dailyLimit ? .available(remaining: dailyLimit - used) : .limitReached
     }
 
+    /// One line under the library's heading about what the user can do.
+    static func caption(attempts: [Attempt]) -> String {
+        switch availability(attempts: attempts) {
+        case .available where !AppConfig.hasPro: "Your first rehearsal is free. 30 seconds to think, 90 to answer."
+        case .available: "30 seconds to think, 90 to answer, as many takes as you like."
+        case .needsPro: "Rehearsals are part of Pro."
+        case .limitReached: "That's \(dailyLimit) for today. Back tomorrow."
+        }
+    }
+
     /// The latest finished attempt at this scenario, which a new one is compared against.
     static func lastAttempt(at scenario: Scenario, in attempts: [Attempt]) -> Attempt? {
         attempts.filter { $0.kind == .scenario && $0.topicID == scenario.id && $0.endedAt != nil }

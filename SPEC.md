@@ -74,7 +74,7 @@ Rules:
 
 Random topics train the underlying skill; rehearsals connect it to the moments users told us they struggle with.
 
-- **Today is a home screen:** today's topic on top (an ember Spin card, or once done a summary card that opens the full result), then **"Practice for real life"**: 70 bundled scenarios (`scenarios.json`) in five categories, as horizontal rows: Interviews, Speaking up, Presenting, Meetings, Everyday. The user's own situations (from onboarding) come first.
+- **Today is a home screen:** today's topic on top (an ember Spin card, or once done a summary card that opens the full result), then **"Practice for real life"**: three rehearsals **picked for you** as rows in one card (two from the user's top situation from onboarding, one from the next, preferring untried ones; rotate daily, stable within a day), then "Browse all 70 rehearsals" → a **Rehearsals** page with category chips (Interviews, Speaking up, Presenting, Meetings, Everyday; the user's first) over one vertical list. 70 bundled scenarios in `scenarios.json`.
 - **Flow:** tap a scenario and the 30-second prep starts at once (no spin, no research, no "one go" confirmation; **Stop** abandons it), then up to 90 seconds. The prompt stays on screen while speaking.
 - **Feedback** is scenario-specific: Clarity, Structure, **Relevance** (did you answer what was asked) and **Presence** (conviction vs hedging), "A strong answer includes" (≤2), one tip, and a comparison with the last attempt at the same scenario. Rehearsals read the coach memory but never update it, and never count toward the streak or Progress.
 - **Try again** on the result (and in History) retakes the same scenario, compared with the previous take. Cards show the best score so far.
