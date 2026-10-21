@@ -114,7 +114,7 @@ extension Attempt {
 
 // MARK: - Scenarios
 
-/// "Practice for real life" on Today: three rehearsals picked for the user today, then a way into the full library.
+/// "Recommended for you" on Today: three rehearsals picked for the user today, then a way into the full library.
 struct ScenarioShelf: View {
     let attempts: [Attempt]
     let onboarding: OnboardingAnswers?
@@ -127,15 +127,8 @@ struct ScenarioShelf: View {
         let attempted = Set(attempts.filter { $0.kind == .scenario }.map(\.topicID))
         let picks = ScenarioLibrary.picks(from: ScenarioStore.all, order: order, attempted: attempted, day: DayKey(.now))
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                Eyebrow("Practice for real life")
-                Text("Rehearse the moments that matter.")
-                    .font(.displaySmall)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(Scenarios.caption(attempts: attempts))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+            Text("Recommended for you")
+                .font(.system(.title2, design: .serif).weight(.semibold))
 
             ScenarioList(scenarios: picks, attempts: attempts, showsCategory: true, onStart: onStart)
 
